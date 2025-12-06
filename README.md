@@ -20,7 +20,3 @@ Right-click the storage icon to open settings while in edit mode.
 
 1. Download and extract to `World of Warcraft/_retail_/Interface/AddOns/`
 2. Reload UI or restart the game
-
-## Requirements
-
-- World of Warcraft Retail 11.2.7+
