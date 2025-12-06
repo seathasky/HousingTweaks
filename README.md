@@ -2,6 +2,8 @@
 
 Quality of life tweaks for the World of Warcraft Housing system.
 
+![Preview Window](docs/preview.png)
+
 ## Features
 
 - **Moveable Storage Panel** - Drag the storage panel anywhere on screen
