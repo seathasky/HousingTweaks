@@ -17,6 +17,4 @@ Type `/ht` to open settings.
 Right-click the storage icon to open settings while in edit mode.
 
 ## Installation
-
-1. Download and extract to `World of Warcraft/_retail_/Interface/AddOns/`
-2. Reload UI or restart the game
+[Housing Tweaks on CurseForge](https://www.curseforge.com/wow/addons/housing-tweaks)
