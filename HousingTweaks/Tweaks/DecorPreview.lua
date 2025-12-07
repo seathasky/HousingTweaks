@@ -6,6 +6,34 @@ HT:RegisterTweak("DecorPreview", DecorPreview)
 
 -- Create preview frame
 local previewFrame
+
+-- Get current theme color
+local function GetThemeColor()
+    local colorThemes = {
+        orange = {r = 1, g = 0.5, b = 0},
+        blue = {r = 0.2, g = 0.6, b = 1},
+        purple = {r = 0.7, g = 0.3, b = 1},
+        green = {r = 0.3, g = 0.9, b = 0.4},
+        red = {r = 1, g = 0.2, b = 0.2},
+        cyan = {r = 0.2, g = 0.9, b = 0.9},
+        white = {r = 1, g = 1, b = 1},
+    }
+    local themeName = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
+    local theme = colorThemes[themeName] or colorThemes.orange
+    return theme.r, theme.g, theme.b
+end
+
+-- Function to apply theme to existing preview frame
+function DecorPreview:ApplyTheme()
+    if previewFrame then
+        if previewFrame.titleText then
+            previewFrame.titleText:SetTextColor(GetThemeColor())
+        end
+        if previewFrame.nameText then
+            previewFrame.nameText:SetTextColor(GetThemeColor())
+        end
+    end
+end
 local function CreatePreviewFrame()
     if previewFrame then 
         return previewFrame 
@@ -53,7 +81,7 @@ local function CreatePreviewFrame()
     local titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     titleText:SetPoint("TOP", frame, "TOP", 0, -12)
     titleText:SetText("Housing Tweaks Preview Window")
-    titleText:SetTextColor(1, 0.5, 0)
+    titleText:SetTextColor(GetThemeColor())
     frame.titleText = titleText
     
     -- Icon
@@ -65,7 +93,7 @@ local function CreatePreviewFrame()
     -- Name text
     local nameText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     nameText:SetPoint("BOTTOM", frame, "BOTTOM", 0, 40)
-    nameText:SetTextColor(1, 0.5, 0)
+    nameText:SetTextColor(GetThemeColor())
     nameText:SetWidth(430)
     nameText:SetWordWrap(true)
     frame.nameText = nameText

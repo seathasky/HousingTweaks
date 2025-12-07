@@ -4,6 +4,54 @@ local addonName, HT = ...
 local StoragePanelStyle = {}
 HT:RegisterTweak("StoragePanelStyle", StoragePanelStyle)
 
+-- Color theme definitions
+local COLOR_THEMES = {
+    orange = {name = "Orange", r = 1, g = 0.5, b = 0},
+    blue = {name = "Blue", r = 0.2, g = 0.6, b = 1},
+    purple = {name = "Purple", r = 0.7, g = 0.3, b = 1},
+    green = {name = "Green", r = 0.3, g = 0.9, b = 0.4},
+    red = {name = "Red", r = 1, g = 0.2, b = 0.2},
+    cyan = {name = "Cyan", r = 0.2, g = 0.9, b = 0.9},
+    white = {name = "White", r = 1, g = 1, b = 1},
+}
+
+local function GetCurrentTheme()
+    local themeName = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
+    return COLOR_THEMES[themeName] or COLOR_THEMES.orange
+end
+
+local function ApplyThemeColor(storagePanel, storageButton)
+    local theme = GetCurrentTheme()
+    
+    -- Apply to storage button icon
+    if storageButton then
+        if storageButton.Icon then
+            storageButton.Icon:SetVertexColor(theme.r, theme.g, theme.b)
+        end
+        if storageButton.OverlayIcon then
+            storageButton.OverlayIcon:SetVertexColor(theme.r, theme.g, theme.b)
+        end
+    end
+    
+    -- Apply to accent borders
+    if storagePanel.htTopBorder then
+        storagePanel.htTopBorder:SetColorTexture(theme.r, theme.g, theme.b, 1)
+    end
+    if storagePanel.htLeftBorder then
+        storagePanel.htLeftBorder:SetColorTexture(theme.r, theme.g, theme.b, 1)
+    end
+    if storagePanel.htBottomBorder then
+        storagePanel.htBottomBorder:SetColorTexture(theme.r, theme.g, theme.b, 1)
+    end
+end
+
+-- Make ApplyThemeColor accessible globally for on-the-fly updates
+function StoragePanelStyle:ApplyTheme()
+    if HouseEditorFrame and HouseEditorFrame.StoragePanel then
+        ApplyThemeColor(HouseEditorFrame.StoragePanel, HouseEditorFrame.StorageButton)
+    end
+end
+
 function StoragePanelStyle:Init()
     local function ApplyCategoriesStyle(storagePanel)
         -- Style the categories background - dark/black
@@ -24,15 +72,8 @@ function StoragePanelStyle:Init()
         local storageButton = HouseEditorFrame.StorageButton
         if not storagePanel then return false end
         
-        -- Tint the storage button icon orange
-        if storageButton then
-            if storageButton.Icon then
-                storageButton.Icon:SetVertexColor(1, 0.5, 0)
-            end
-            if storageButton.OverlayIcon then
-                storageButton.OverlayIcon:SetVertexColor(1, 0.5, 0)
-            end
-        end
+        -- Apply theme color to storage button
+        ApplyThemeColor(storagePanel, storageButton)
         
         -- Style the main background - dark gray
         if storagePanel.Background then
@@ -57,35 +98,36 @@ function StoragePanelStyle:Init()
             storagePanel.htCategoriesHooked = true
         end
         
-        -- Add orange accent border at top
+        -- Add accent border at top
         if not storagePanel.htTopBorder then
             local topBorder = storagePanel:CreateTexture(nil, "OVERLAY", nil, 7)
             topBorder:SetPoint("TOPLEFT", 0, 0)
             topBorder:SetPoint("TOPRIGHT", 0, 0)
             topBorder:SetHeight(3)
-            topBorder:SetColorTexture(1, 0.5, 0, 1)
             storagePanel.htTopBorder = topBorder
         end
         
-        -- Add orange accent border at left
+        -- Add accent border at left (using higher draw layer to ensure visibility)
         if not storagePanel.htLeftBorder then
-            local leftBorder = storagePanel:CreateTexture(nil, "OVERLAY", nil, 7)
-            leftBorder:SetPoint("TOPLEFT", 0, 0)
-            leftBorder:SetPoint("BOTTOMLEFT", 0, 0)
+            local leftBorder = storagePanel:CreateTexture(nil, "BORDER", nil, 7)
+            leftBorder:SetPoint("TOPLEFT", 0, -3)
+            leftBorder:SetPoint("BOTTOMLEFT", 0, 3)
             leftBorder:SetWidth(3)
-            leftBorder:SetColorTexture(1, 0.5, 0, 1)
+            leftBorder:SetDrawLayer("BORDER", 7)
             storagePanel.htLeftBorder = leftBorder
         end
         
-        -- Add orange accent border at bottom
+        -- Add accent border at bottom
         if not storagePanel.htBottomBorder then
             local bottomBorder = storagePanel:CreateTexture(nil, "OVERLAY", nil, 7)
             bottomBorder:SetPoint("BOTTOMLEFT", 0, 0)
             bottomBorder:SetPoint("BOTTOMRIGHT", 0, 0)
             bottomBorder:SetHeight(3)
-            bottomBorder:SetColorTexture(1, 0.5, 0, 1)
             storagePanel.htBottomBorder = bottomBorder
         end
+        
+        -- Apply theme colors to borders
+        ApplyThemeColor(storagePanel, storageButton)
         
         -- Style the input blocker background
         if storagePanel.InputBlocker then
