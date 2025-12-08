@@ -2,11 +2,7 @@
 
 Quality of life tweaks for the World of Warcraft Housing system.
 
-![Favorites](https://raw.githubusercontent.com/seathasky/HousingTweaks/refs/heads/main/faves.png)
-
-__
-
-![Preview](https://raw.githubusercontent.com/seathasky/HousingTweaks/refs/heads/main/preview.png)
+![Preview](https://raw.githubusercontent.com/seathasky/HousingTweaks/refs/heads/main/main.png)
 
 ## Features
 
