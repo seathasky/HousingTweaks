@@ -13,8 +13,8 @@ Quality of life tweaks for the World of Warcraft Housing system.
 
 ## Usage
 
-Type `/ht` to open settings.
-
+Type `/ht` to open settings 
+(OR)
 Click HT in Decor storage panel at top or type /ht outside of housing edit mode.
 
 ## Installation
