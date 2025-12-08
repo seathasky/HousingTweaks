@@ -12,6 +12,7 @@ local defaults = {
     positions = {},
     DecorPreviewPosition = "CENTERRIGHT",
     storagePanelColorTheme = "orange",
+    toolbarPosition = "BOTTOMRIGHT",
 }
 
 -- Initialize saved variables
@@ -41,6 +42,10 @@ local function InitializeDB()
     -- Ensure storagePanelColorTheme default
     if HousingTweaksDB.storagePanelColorTheme == nil then
         HousingTweaksDB.storagePanelColorTheme = defaults.storagePanelColorTheme
+    end
+    -- Ensure toolbarPosition default
+    if HousingTweaksDB.toolbarPosition == nil then
+        HousingTweaksDB.toolbarPosition = defaults.toolbarPosition
     end
 end
 
@@ -228,7 +233,7 @@ local function CreateSettingsFrame()
     -- Version text in top right corner
     local versionText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     versionText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -25, -5)
-    versionText:SetText("ver. 1.0.3")
+    versionText:SetText("ver. 1.0.4")
     versionText:SetTextColor(0.6, 0.6, 0.6)
     versionText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     
@@ -448,7 +453,64 @@ function PopulateSettingsFrame(frame)
             end)
             
             table.insert(frame.containers, container)
+            yOffset = yOffset - 70
         end
+        
+        -- Toolbar Position dropdown
+        local toolbarLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        toolbarLabel:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
+        toolbarLabel:SetText("Toolbar Position:")
+        toolbarLabel:SetTextColor(1, 1, 1)
+        yOffset = yOffset - 25
+        
+        local toolbarDropdown = CreateFrame("Frame", "HousingTweaksToolbarPosDropdown", scrollChild, "UIDropDownMenuTemplate")
+        toolbarDropdown:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
+        UIDropDownMenu_SetWidth(toolbarDropdown, 150)
+        
+        local toolbarPositions = {
+            { value = "TOPRIGHT", text = "Top Right" },
+            { value = "BOTTOMRIGHT", text = "Bottom Right *" },
+        }
+        
+        local function OnToolbarPosClick(self, arg1)
+            HousingTweaksDB.toolbarPosition = arg1
+            UIDropDownMenu_SetText(toolbarDropdown, self:GetText())
+            CloseDropDownMenus()
+            
+            -- Apply position immediately
+            if HT.Tweaks.StoragePanelStyle and HT.Tweaks.StoragePanelStyle.ApplyToolbarPosition then
+                HT.Tweaks.StoragePanelStyle:ApplyToolbarPosition()
+            end
+        end
+        
+        UIDropDownMenu_Initialize(toolbarDropdown, function(self, level)
+            for _, pos in ipairs(toolbarPositions) do
+                local info = UIDropDownMenu_CreateInfo()
+                info.text = pos.text
+                info.arg1 = pos.value
+                info.func = OnToolbarPosClick
+                info.checked = (HousingTweaksDB.toolbarPosition == pos.value)
+                UIDropDownMenu_AddButton(info, level)
+            end
+        end)
+        
+        -- Set current selection text
+        local currentToolbarPos = HousingTweaksDB.toolbarPosition or "BOTTOMRIGHT"
+        for _, pos in ipairs(toolbarPositions) do
+            if pos.value == currentToolbarPos then
+                UIDropDownMenu_SetText(toolbarDropdown, pos.text)
+                break
+            end
+        end
+        
+        local toolbarNote = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        toolbarNote:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset - 30)
+        toolbarNote:SetPoint("RIGHT", scrollChild, "RIGHT", -15, 0)
+        toolbarNote:SetJustifyH("LEFT")
+        toolbarNote:SetText("Position of the Preview/Color/HT dropdowns relative to the storage panel.")
+        toolbarNote:SetTextColor(0.7, 0.7, 0.7)
+        
+        table.insert(frame.containers, toolbarDropdown)
     end
     
     -- Storage Tab Content

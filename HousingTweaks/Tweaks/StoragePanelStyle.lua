@@ -241,11 +241,34 @@ local function CreateSettingsButton(parent)
     return button
 end
 
+-- Get toolbar position from settings
+local function GetToolbarPosition()
+    return HousingTweaksDB and HousingTweaksDB.toolbarPosition or "BOTTOMRIGHT"
+end
+
+-- Apply toolbar position to all toolbar elements
+local function ApplyToolbarPosition(storagePanel)
+    if not storagePanel then return end
+    
+    local position = GetToolbarPosition()
+    
+    -- Update HT button position
+    if storagePanel.htSettingsButton then
+        storagePanel.htSettingsButton:ClearAllPoints()
+        if position == "TOPRIGHT" then
+            storagePanel.htSettingsButton:SetPoint("BOTTOMRIGHT", storagePanel, "TOPRIGHT", 0, 4)
+        else
+            storagePanel.htSettingsButton:SetPoint("TOPRIGHT", storagePanel, "BOTTOMRIGHT", 0, -4)
+        end
+    end
+end
+
 -- Create all toolbar elements above the storage panel
 local function CreateStorageToolbar(storagePanel)
     if storagePanel.htToolbar then return end
     
     local theme = GetCurrentTheme()
+    local position = GetToolbarPosition()
     
     -- Color options for dropdown
     local colorOptions = {
@@ -260,7 +283,11 @@ local function CreateStorageToolbar(storagePanel)
     
     -- Always create HT Settings button
     local htButton = CreateSettingsButton(storagePanel)
-    htButton:SetPoint("BOTTOMRIGHT", storagePanel, "TOPRIGHT", 0, 4)
+    if position == "TOPRIGHT" then
+        htButton:SetPoint("BOTTOMRIGHT", storagePanel, "TOPRIGHT", 0, 4)
+    else
+        htButton:SetPoint("TOPRIGHT", storagePanel, "BOTTOMRIGHT", 0, -4)
+    end
     storagePanel.htSettingsButton = htButton
     
     -- Track the leftmost element for anchoring
@@ -391,6 +418,13 @@ function StoragePanelStyle:ApplyTheme()
     end
 end
 
+-- Apply toolbar position from settings
+function StoragePanelStyle:ApplyToolbarPosition()
+    if HouseEditorFrame and HouseEditorFrame.StoragePanel then
+        ApplyToolbarPosition(HouseEditorFrame.StoragePanel)
+    end
+end
+
 -- Always create the toolbar (HT button always, dropdowns based on enabled tweaks)
 local function SetupToolbar()
     if not HouseEditorFrame then return false end
@@ -432,12 +466,44 @@ function StoragePanelStyle:Init()
     local function ApplyCategoriesStyle(storagePanel)
         -- Style the categories background - dark/black
         if storagePanel.Categories and storagePanel.Categories.Background then
-            storagePanel.Categories.Background:SetColorTexture(0.08, 0.08, 0.08, 1)
+            local bg = storagePanel.Categories.Background
+            bg:SetTexture(nil)
+            bg:SetAtlas(nil)
+            bg:SetColorTexture(0.08, 0.08, 0.08, 1)
+            
+            -- Hook SetTexture and SetAtlas to prevent wood texture from ever being set
+            if not bg.htHooked then
+                bg.SetTexture = function(self, texture, ...)
+                    -- Ignore any texture setting, keep our color
+                    self:SetColorTexture(0.08, 0.08, 0.08, 1)
+                end
+                bg.SetAtlas = function(self, atlas, ...)
+                    -- Ignore any atlas setting, keep our color
+                    self:SetColorTexture(0.08, 0.08, 0.08, 1)
+                end
+                bg.htHooked = true
+            end
         end
         
         -- Style the categories top border - dark/black
         if storagePanel.Categories and storagePanel.Categories.TopBorder then
-            storagePanel.Categories.TopBorder:SetColorTexture(0.08, 0.08, 0.08, 1)
+            local topBorder = storagePanel.Categories.TopBorder
+            topBorder:SetTexture(nil)
+            topBorder:SetAtlas(nil)
+            topBorder:SetColorTexture(0.08, 0.08, 0.08, 1)
+            
+            -- Hook SetTexture and SetAtlas to prevent wood texture from ever being set
+            if not topBorder.htHooked then
+                topBorder.SetTexture = function(self, texture, ...)
+                    -- Ignore any texture setting, keep our color
+                    self:SetColorTexture(0.08, 0.08, 0.08, 1)
+                end
+                topBorder.SetAtlas = function(self, atlas, ...)
+                    -- Ignore any atlas setting, keep our color
+                    self:SetColorTexture(0.08, 0.08, 0.08, 1)
+                end
+                topBorder.htHooked = true
+            end
         end
     end
     
