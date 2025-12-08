@@ -131,16 +131,8 @@ function MoveableStoragePanel:Init()
         return
     end
     
-    -- Wait for addon to load
-    local loader = CreateFrame("Frame")
-    loader:RegisterEvent("ADDON_LOADED")
-    loader:SetScript("OnEvent", function(self, event, loadedAddon)
-        if loadedAddon == "Blizzard_HouseEditor" then
-            C_Timer.After(0.1, function()
-                if SetupHooks() then
-                    self:UnregisterEvent("ADDON_LOADED")
-                end
-            end)
-        end
+    -- Wait for the Blizzard House Editor to load
+    HT.WaitForHouseEditor(0, function()
+        SetupHooks()
     end)
 end

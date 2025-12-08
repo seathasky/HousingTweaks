@@ -2,7 +2,7 @@
 ## Title: Housing Tweaks
 ## Notes: Quality of life tweaks for the Housing system
 ## Author: Seathasky
-## Version: 1.0.4
+## Version: 1.0.5
 ## SavedVariablesPerCharacter: HousingTweaksDB
 ## IconTexture: Interface\AddOns\HousingTweaks\Icons\ht.tga
 

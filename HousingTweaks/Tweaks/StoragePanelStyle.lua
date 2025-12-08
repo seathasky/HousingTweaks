@@ -5,33 +5,10 @@ local StoragePanelStyle = {}
 HT:RegisterTweak("StoragePanelStyle", StoragePanelStyle)
 
 -- Color theme definitions
-local COLOR_THEMES = {
-    orange = {name = "Orange", r = 1, g = 0.5, b = 0},
-    blue = {name = "Blue", r = 0.2, g = 0.6, b = 1},
-    purple = {name = "Purple", r = 0.7, g = 0.3, b = 1},
-    green = {name = "Green", r = 0.3, g = 0.9, b = 0.4},
-    red = {name = "Red", r = 1, g = 0.2, b = 0.2},
-    cyan = {name = "Cyan", r = 0.2, g = 0.9, b = 0.9},
-    white = {name = "White", r = 1, g = 1, b = 1},
-}
-
--- Preview position options
-local PREVIEW_POSITIONS = {
-    { value = "CENTER", text = "Center" },
-    { value = "CENTERRIGHT", text = "Center Right" },
-    { value = "CENTERLEFT", text = "Center Left" },
-    { value = "TOP", text = "Top" },
-    { value = "TOPRIGHT", text = "Top Right" },
-    { value = "TOPLEFT", text = "Top Left" },
-    { value = "RIGHT", text = "Right" },
-    { value = "LEFT", text = "Left" },
-    { value = "BOTTOMRIGHT", text = "Bottom Right" },
-    { value = "BOTTOMLEFT", text = "Bottom Left" },
-}
+-- Use centralized constants exposed by the main addon table (HT)
 
 local function GetCurrentTheme()
-    local themeName = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
-    return COLOR_THEMES[themeName] or COLOR_THEMES.orange
+    return HT.GetTheme()
 end
 
 -- Function to apply position to preview frame
@@ -99,6 +76,7 @@ local function CreateDropdownWidget(parent, label, width, options, getCurrentVal
     
     -- Label
     local labelText = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    HT.ApplyFontString(labelText, "GameFontNormalSmall")
     labelText:SetPoint("LEFT", container, "LEFT", 6, 0)
     labelText:SetText(label)
     labelText:SetTextColor(0.8, 0.8, 0.8)
@@ -106,6 +84,7 @@ local function CreateDropdownWidget(parent, label, width, options, getCurrentVal
     
     -- Current selection text
     local selectedText = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    HT.ApplyFontString(selectedText, "GameFontNormalSmall")
     selectedText:SetPoint("LEFT", labelText, "RIGHT", 4, 0)
     selectedText:SetPoint("RIGHT", container, "RIGHT", -16, 0)
     selectedText:SetJustifyH("LEFT")
@@ -208,6 +187,7 @@ local function CreateSettingsButton(parent)
     
     -- Text
     local text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    HT.ApplyFontString(text, "GameFontNormalSmall")
     text:SetPoint("CENTER", 0, 0)
     text:SetText("HT")
     text:SetTextColor(theme.r, theme.g, theme.b)
@@ -316,7 +296,7 @@ local function CreateStorageToolbar(storagePanel)
                 end
             end
         )
-        colorDropdown:SetPoint("RIGHT", leftmostElement, "LEFT", -4, 0)
+        colorDropdown:SetPoint("RIGHT", leftmostElement, "LEFT", -8, 0)
         storagePanel.htColorDropdown = colorDropdown
         leftmostElement = colorDropdown
     end
@@ -326,15 +306,15 @@ local function CreateStorageToolbar(storagePanel)
         local previewDropdown = CreateDropdownWidget(
             storagePanel,
             "Preview:",
-            140,
-            PREVIEW_POSITIONS,
+            190,
+            HT.PREVIEW_POSITIONS,
             function() return HousingTweaksDB and HousingTweaksDB.DecorPreviewPosition or "CENTERRIGHT" end,
             function(value)
                 HousingTweaksDB.DecorPreviewPosition = value
                 ApplyPreviewPosition(value)
             end
         )
-        previewDropdown:SetPoint("RIGHT", leftmostElement, "LEFT", -4, 0)
+        previewDropdown:SetPoint("RIGHT", leftmostElement, "LEFT", -8, 0)
         storagePanel.htPreviewDropdown = previewDropdown
     end
     
@@ -369,8 +349,9 @@ local function UpdateToolbarTheme(storagePanel)
         end
         -- Update displayed color name
         local currentTheme = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
-        local colorNames = {orange="Orange", blue="Blue", purple="Purple", green="Green", red="Red", cyan="Cyan", white="White"}
-        container.selectedText:SetText(colorNames[currentTheme] or "Orange")
+        -- Get display name from centralized theme list
+        local currentName = (HT.COLOR_THEMES[currentTheme] and HT.COLOR_THEMES[currentTheme].name) or "Orange"
+        container.selectedText:SetText(currentName)
     end
     
     -- Update HT button
@@ -395,6 +376,17 @@ local function ApplyThemeColor(storagePanel, storageButton)
         end
         if storageButton.OverlayIcon then
             storageButton.OverlayIcon:SetVertexColor(theme.r, theme.g, theme.b)
+        end
+    end
+    
+    -- Apply to collapse button icon
+    if storagePanel and storagePanel.CollapseButton then
+        local collapseBtn = storagePanel.CollapseButton
+        if collapseBtn.Icon then
+            collapseBtn.Icon:SetVertexColor(theme.r, theme.g, theme.b)
+        end
+        if collapseBtn.OverlayIcon then
+            collapseBtn.OverlayIcon:SetVertexColor(theme.r, theme.g, theme.b)
         end
     end
     
@@ -445,17 +437,9 @@ local function InitToolbar()
         return
     end
     
-    -- Wait for addon to load
-    local loader = CreateFrame("Frame")
-    loader:RegisterEvent("ADDON_LOADED")
-    loader:SetScript("OnEvent", function(self, event, loadedAddon)
-        if loadedAddon == "Blizzard_HouseEditor" then
-            C_Timer.After(0.5, function()
-                if SetupToolbar() then
-                    self:UnregisterEvent("ADDON_LOADED")
-                end
-            end)
-        end
+    -- Wait for the Blizzard House Editor to load (no delay)
+    HT.WaitForHouseEditor(0, function()
+        SetupToolbar()
     end)
 end
 
@@ -520,33 +504,76 @@ function StoragePanelStyle:Init()
         -- Apply theme color to storage button
         ApplyThemeColor(storagePanel, storageButton)
         
-        -- Style the main background - dark gray
-        if storagePanel.Background then
+        -- Style the main background - dark gray and hook to prevent Blizzard from resetting
+        if storagePanel.Background and not storagePanel.Background.htHooked then
             storagePanel.Background:SetColorTexture(0.12, 0.12, 0.12, 0.95)
+            storagePanel.Background.SetTexture = function(self)
+                self:SetColorTexture(0.12, 0.12, 0.12, 0.95)
+            end
+            storagePanel.Background.SetAtlas = function(self)
+                self:SetColorTexture(0.12, 0.12, 0.12, 0.95)
+            end
+            storagePanel.Background.htHooked = true
         end
         
-        -- Style the header background - dark gray
-        if storagePanel.HeaderBackground then
+        -- Style the header background - dark gray and hook to prevent Blizzard from resetting
+        if storagePanel.HeaderBackground and not storagePanel.HeaderBackground.htHooked then
             storagePanel.HeaderBackground:SetColorTexture(0.15, 0.15, 0.15, 1)
+            storagePanel.HeaderBackground.SetTexture = function(self)
+                self:SetColorTexture(0.15, 0.15, 0.15, 1)
+            end
+            storagePanel.HeaderBackground.SetAtlas = function(self)
+                self:SetColorTexture(0.15, 0.15, 0.15, 1)
+            end
+            storagePanel.HeaderBackground.htHooked = true
         end
         
         -- Apply categories style now
         ApplyCategoriesStyle(storagePanel)
         
-        -- Hook OnShow to reapply categories style when panel reopens
+        -- Hook Show method to apply styles BEFORE panel becomes visible (prevents flash)
+        if not storagePanel.htShowHooked then
+            local originalShow = storagePanel.Show
+            storagePanel.Show = function(self, ...)
+                -- Apply all styles before showing
+                if self.Background then
+                    self.Background:SetColorTexture(0.12, 0.12, 0.12, 0.95)
+                end
+                if self.HeaderBackground then
+                    self.HeaderBackground:SetColorTexture(0.15, 0.15, 0.15, 1)
+                end
+                ApplyCategoriesStyle(self)
+                ApplyThemeColor(self, HouseEditorFrame and HouseEditorFrame.StorageButton)
+                if self.CornerBorder then
+                    self.CornerBorder:Hide()
+                end
+                -- Now show the panel
+                return originalShow(self, ...)
+            end
+            storagePanel.htShowHooked = true
+        end
+        
+        -- Also hook OnShow as backup for any edge cases
         if not storagePanel.htCategoriesHooked then
             storagePanel:HookScript("OnShow", function(self)
-                C_Timer.After(0.01, function()
-                    ApplyCategoriesStyle(self)
-                end)
+                -- Apply styles immediately (no delay) to prevent flash
+                if self.Background then
+                    self.Background:SetColorTexture(0.12, 0.12, 0.12, 0.95)
+                end
+                if self.HeaderBackground then
+                    self.HeaderBackground:SetColorTexture(0.15, 0.15, 0.15, 1)
+                end
+                ApplyCategoriesStyle(self)
+                ApplyThemeColor(self, HouseEditorFrame.StorageButton)
+                if self.CornerBorder then
+                    self.CornerBorder:Hide()
+                end
             end)
             
             -- Hook SetCategoriesBackground to prevent wood texture from coming back
             if storagePanel.Categories and storagePanel.Categories.SetCategoriesBackground then
                 hooksecurefunc(storagePanel.Categories, "SetCategoriesBackground", function()
-                    C_Timer.After(0.01, function()
-                        ApplyCategoriesStyle(storagePanel)
-                    end)
+                    ApplyCategoriesStyle(storagePanel)
                 end)
             end
             
@@ -605,16 +632,17 @@ function StoragePanelStyle:Init()
         return
     end
     
-    -- Wait for addon to load
-    local loader = CreateFrame("Frame")
-    loader:RegisterEvent("ADDON_LOADED")
-    loader:SetScript("OnEvent", function(self, event, loadedAddon)
-        if loadedAddon == "Blizzard_HouseEditor" then
-            C_Timer.After(0.5, function()
-                if SetupStyle() then
-                    self:UnregisterEvent("ADDON_LOADED")
-                end
-            end)
+    -- Wait for the Blizzard House Editor to load with no delay
+    HT.WaitForHouseEditor(0, function()
+        SetupStyle()
+        -- Also hook HouseEditorFrame.Show to catch it before it's visible
+        if HouseEditorFrame and not HouseEditorFrame.htShowHooked then
+            local originalFrameShow = HouseEditorFrame.Show
+            HouseEditorFrame.Show = function(self, ...)
+                SetupStyle()
+                return originalFrameShow(self, ...)
+            end
+            HouseEditorFrame.htShowHooked = true
         end
     end)
 end

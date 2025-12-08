@@ -103,6 +103,124 @@ function HT:SavePosition(name, point, relativeTo, relativePoint, x, y)
     }
 end
 
+-- Font helpers
+HT.FontPath = "Interface\\AddOns\\HousingTweaks\\Fonts\\htfont.ttf"
+function HT.GetFontPath()
+    if HT.FontPath and HT.FontPath ~= "" then
+        return HT.FontPath
+    end
+    return "Fonts\\FRIZQT__.TTF"
+end
+
+-- Returns font size from a template name or number
+local function ResolveFontSize(templateOrSize)
+    if type(templateOrSize) == "number" then
+        return templateOrSize
+    end
+    local t = tostring(templateOrSize or "GameFontNormal")
+    if string.find(t, "Small") then
+        return 11
+    elseif string.find(t, "Large") then
+        return 14
+    elseif string.find(t, "Huge") then
+        return 16
+    else
+        return 12
+    end
+end
+
+function HT.ApplyFontString(fontString, templateOrSize, flags)
+    if not fontString or not fontString.SetFont then return end
+    local size = ResolveFontSize(templateOrSize)
+    flags = flags or ""
+    -- Set font safely - fall back to FRIZQT if setting the custom font fails
+    local path = HT.GetFontPath()
+    local ok, err = pcall(fontString.SetFont, fontString, path, size, flags)
+    if not ok then
+        -- Try fallback to the default FRIZQT font
+        local fallback = "Fonts\\FRIZQT__.TTF"
+        local ok2, err2 = pcall(fontString.SetFont, fontString, fallback, size, flags)
+        if not ok2 then
+            -- As a last resort, do nothing to avoid breaking UI further
+            print("HousingTweaks: Failed to set font (custom and fallback). Error:", err, err2)
+        end
+    end
+end
+
+-- Validate the custom font by applying it to a temp FontString and checking for errors
+function HT.ValidateCustomFont()
+    if not HT.FontPath or HT.FontPath == "" then
+        return false, "No font path set"
+    end
+    -- Create a temporary invisible fontstring to test SetFont
+    local tmp = UIParent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    tmp:SetPoint("CENTER", UIParent, "CENTER", 9999, 9999) -- off-screen
+    local size = 12
+    local ok, err = pcall(tmp.SetFont, tmp, HT.FontPath, size, "")
+    tmp:SetParent(nil)
+    tmp:Hide()
+    if not ok then
+        return false, err
+    end
+    return true
+end
+
+-- Slash command to toggle or test custom font
+SLASH_HOUSINGTWEAKS_FONT1 = "/htfont"
+SlashCmdList["HOUSINGTWEAKS_FONT"] = function(msg)
+    local action = (msg or ""):lower():match("^(%S+)") or "test"
+    if action == "test" then
+        local ok, err = HT.ValidateCustomFont()
+        if ok then
+            print("HousingTweaks: Custom font appears valid: ", HT.GetFontPath())
+        else
+            print("HousingTweaks: Custom font validation failed:", err)
+        end
+    elseif action == "enable" then
+        if HT.FontPath == "" then
+            print("HousingTweaks: No custom font path set. Edit HT.FontPath in HousingTweaks.lua to set a path.")
+            return
+        end
+        HT.ApplyFontString(UIParent:CreateFontString(nil, "ARTWORK", "GameFontNormal"), 12, "")
+        print("HousingTweaks: Enabled custom font (attempted). Reload UI to ensure all elements update.")
+    elseif action == "disable" then
+        HT.FontPath = ""
+        print("HousingTweaks: Custom font disabled; fallback font will be used on next UI updates.")
+    else
+        print("HousingTweaks /htfont commands: test | enable | disable")
+    end
+end
+
+-- Helper: invoke a callback once the Blizzard House Editor is loaded
+function HT.WaitForHouseEditor(delay, callback)
+    if type(delay) == "function" then
+        callback = delay
+        delay = 0
+    end
+    delay = delay or 0
+    if HouseEditorFrame then
+        -- Frame already exists, run immediately or with minimal delay
+        if delay > 0 then
+            C_Timer.After(delay, callback)
+        else
+            callback()
+        end
+        return
+    end
+    local loader = CreateFrame("Frame")
+    loader:RegisterEvent("ADDON_LOADED")
+    loader:SetScript("OnEvent", function(self, event, loadedAddon)
+        if loadedAddon == "Blizzard_HouseEditor" then
+            self:UnregisterEvent("ADDON_LOADED")
+            if delay > 0 then
+                C_Timer.After(delay, callback)
+            else
+                callback()
+            end
+        end
+    end)
+end
+
 -- Reload prompt dialog
 StaticPopupDialogs["HOUSINGTWEAKS_RELOAD_PROMPT"] = {
     text = "This tweak requires a UI reload to take effect. Reload now?",
@@ -118,24 +236,55 @@ StaticPopupDialogs["HOUSINGTWEAKS_RELOAD_PROMPT"] = {
 }
 
 -- Get current theme color
-local function GetThemeColor()
-    local colorThemes = {
-        orange = {r = 1, g = 0.5, b = 0},
-        blue = {r = 0.2, g = 0.6, b = 1},
-        purple = {r = 0.7, g = 0.3, b = 1},
-        green = {r = 0.3, g = 0.9, b = 0.4},
-        red = {r = 1, g = 0.2, b = 0.2},
-        cyan = {r = 0.2, g = 0.9, b = 0.9},
-        white = {r = 1, g = 1, b = 1},
-    }
+-- Shared color themes for the addon
+HT.COLOR_THEMES = {
+    orange = { name = "Orange", r = 1, g = 0.5, b = 0 },
+    blue = { name = "Blue", r = 0.2, g = 0.6, b = 1 },
+    purple = { name = "Purple", r = 0.7, g = 0.3, b = 1 },
+    green = { name = "Green", r = 0.3, g = 0.9, b = 0.4 },
+    red = { name = "Red", r = 1, g = 0.2, b = 0.2 },
+    cyan = { name = "Cyan", r = 0.2, g = 0.9, b = 0.9 },
+    white = { name = "White", r = 1, g = 1, b = 1 },
+}
+
+-- Also provide an array list useful for dropdowns
+HT.COLOR_THEME_LIST = {
+    { value = "orange", text = "Orange", r = 1, g = 0.5, b = 0 },
+    { value = "blue", text = "Blue", r = 0.2, g = 0.6, b = 1 },
+    { value = "purple", text = "Purple", r = 0.7, g = 0.3, b = 1 },
+    { value = "green", text = "Green", r = 0.3, g = 0.9, b = 0.4 },
+    { value = "red", text = "Red", r = 1, g = 0.2, b = 0.2 },
+    { value = "cyan", text = "Cyan", r = 0.2, g = 0.9, b = 0.9 },
+    { value = "white", text = "White", r = 1, g = 1, b = 1 },
+}
+
+function HT.GetTheme()
     local themeName = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
-    local theme = colorThemes[themeName] or colorThemes.orange
+    return HT.COLOR_THEMES[themeName] or HT.COLOR_THEMES.orange
+end
+
+function HT.GetThemeColor()
+    local theme = HT.GetTheme()
     return theme.r, theme.g, theme.b
 end
 
+-- Preview positions array
+HT.PREVIEW_POSITIONS = {
+    { value = "CENTER", text = "Center" },
+    { value = "CENTERRIGHT", text = "Center Right *" },
+    { value = "CENTERLEFT", text = "Center Left" },
+    { value = "TOP", text = "Top" },
+    { value = "TOPRIGHT", text = "Top Right" },
+    { value = "TOPLEFT", text = "Top Left" },
+    { value = "RIGHT", text = "Right" },
+    { value = "LEFT", text = "Left" },
+    { value = "BOTTOMRIGHT", text = "Bottom Right" },
+    { value = "BOTTOMLEFT", text = "Bottom Left" },
+}
+
 -- Function to refresh GUI colors
 local function RefreshGUIColors(frame)
-    local r, g, b = GetThemeColor()
+    local r, g, b = HT.GetThemeColor()
     
     -- Update title
     if frame.TitleText then
@@ -227,15 +376,15 @@ local function CreateSettingsFrame()
     frame.InsetBorderBottomRight:Hide()
     
     frame.TitleText:SetText("Housing Tweaks")
-    frame.TitleText:SetTextColor(GetThemeColor())
-    frame.TitleText:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+    frame.TitleText:SetTextColor(HT.GetThemeColor())
+    HT.ApplyFontString(frame.TitleText, 16, "OUTLINE")
     
     -- Version text in top right corner
     local versionText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     versionText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -25, -5)
-    versionText:SetText("ver. 1.0.4")
+    versionText:SetText("ver. 1.0.5")
     versionText:SetTextColor(0.6, 0.6, 0.6)
-    versionText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    HT.ApplyFontString(versionText, 10, "")
     
     -- Create tab buttons
     local tabButtons = {}
@@ -246,6 +395,7 @@ local function CreateSettingsFrame()
         tab:SetPoint("TOPLEFT", frame.InsetBg, "TOPLEFT", 10 + (index - 1) * 105, 5)
         
         local text = tab:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        HT.ApplyFontString(text, "GameFontNormal")
         text:SetPoint("CENTER")
         text:SetText(name)
         text:SetTextColor(0.7, 0.7, 0.7)
@@ -261,7 +411,7 @@ local function CreateSettingsFrame()
                 t.text:SetTextColor(0.7, 0.7, 0.7)
             end
             tab.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
-            tab.text:SetTextColor(GetThemeColor())
+                tab.text:SetTextColor(HT.GetThemeColor())
             frame.activeTab = name
             PopulateSettingsFrame(frame)
         end)
@@ -277,7 +427,7 @@ local function CreateSettingsFrame()
     
     -- Set Theme as default
     themeTab.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
-    themeTab.text:SetTextColor(GetThemeColor())
+    themeTab.text:SetTextColor(HT.GetThemeColor())
     frame.activeTab = "Theme"
     frame.tabs = tabButtons
     
@@ -327,12 +477,14 @@ function PopulateSettingsFrame(frame)
     if activeTab == "Theme" then
         -- Color theme section
         local themeLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        HT.ApplyFontString(themeLabel, "GameFontNormalLarge")
         themeLabel:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
         themeLabel:SetText("Theme Settings")
-        themeLabel:SetTextColor(GetThemeColor())
+        themeLabel:SetTextColor(HT.GetThemeColor())
         yOffset = yOffset - 30
         
         local themeDesc = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        HT.ApplyFontString(themeDesc, "GameFontNormal")
         themeDesc:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
         themeDesc:SetText("Accent Color Theme:")
         themeDesc:SetTextColor(1, 1, 1)
@@ -343,15 +495,7 @@ function PopulateSettingsFrame(frame)
         dropdown:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
         UIDropDownMenu_SetWidth(dropdown, 150)
         
-        local colorThemes = {
-            { value = "orange", text = "Orange", r = 1, g = 0.5, b = 0 },
-            { value = "blue", text = "Blue", r = 0.2, g = 0.6, b = 1 },
-            { value = "purple", text = "Purple", r = 0.7, g = 0.3, b = 1 },
-            { value = "green", text = "Green", r = 0.3, g = 0.9, b = 0.4 },
-            { value = "red", text = "Red", r = 1, g = 0.2, b = 0.2 },
-            { value = "cyan", text = "Cyan", r = 0.2, g = 0.9, b = 0.9 },
-            { value = "white", text = "White", r = 1, g = 1, b = 1 },
-        }
+        local colorThemes = HT.COLOR_THEME_LIST
         
         local function OnClick(self, arg1)
             HousingTweaksDB.storagePanelColorTheme = arg1
@@ -374,7 +518,7 @@ function PopulateSettingsFrame(frame)
             if frame.tabs then
                 for _, tab in ipairs(frame.tabs) do
                     if tab.text:GetText() == activeTab then
-                        tab.text:SetTextColor(GetThemeColor())
+                        tab.text:SetTextColor(HT.GetThemeColor())
                     end
                 end
             end
@@ -404,6 +548,7 @@ function PopulateSettingsFrame(frame)
         yOffset = yOffset - 40
         
         local note = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        HT.ApplyFontString(note, "GameFontNormalSmall")
         note:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
         note:SetPoint("RIGHT", scrollChild, "RIGHT", -15, 0)
         note:SetJustifyH("LEFT")
@@ -426,17 +571,20 @@ function PopulateSettingsFrame(frame)
             checkbox:SetChecked(HT:IsTweakEnabled("StoragePanelStyle"))
             
             local label = container:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            HT.ApplyFontString(label, "GameFontNormal")
             label:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
             label:SetText(info.name)
-            label:SetTextColor(GetThemeColor())
+            label:SetTextColor(HT.GetThemeColor())
             
             if info.requiresReload then
                 local reloadIcon = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                HT.ApplyFontString(reloadIcon, "GameFontNormalSmall")
                 reloadIcon:SetPoint("LEFT", label, "RIGHT", 5, 0)
                 reloadIcon:SetText("|cFFFFAA00(reload)|r")
             end
             
             local desc = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            HT.ApplyFontString(desc, "GameFontNormalSmall")
             desc:SetPoint("TOPLEFT", checkbox, "BOTTOMLEFT", 5, 2)
             desc:SetPoint("RIGHT", container, "RIGHT", -5, 0)
             desc:SetJustifyH("LEFT")
@@ -458,6 +606,7 @@ function PopulateSettingsFrame(frame)
         
         -- Toolbar Position dropdown
         local toolbarLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        HT.ApplyFontString(toolbarLabel, "GameFontNormal")
         toolbarLabel:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
         toolbarLabel:SetText("Toolbar Position:")
         toolbarLabel:SetTextColor(1, 1, 1)
@@ -504,6 +653,7 @@ function PopulateSettingsFrame(frame)
         end
         
         local toolbarNote = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        HT.ApplyFontString(toolbarNote, "GameFontNormalSmall")
         toolbarNote:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset - 30)
         toolbarNote:SetPoint("RIGHT", scrollChild, "RIGHT", -15, 0)
         toolbarNote:SetJustifyH("LEFT")
@@ -530,17 +680,20 @@ function PopulateSettingsFrame(frame)
                 checkbox:SetChecked(HT:IsTweakEnabled(tweakName))
                 
                 local label = container:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                HT.ApplyFontString(label, "GameFontNormal")
                 label:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
                 label:SetText(info.name)
-                label:SetTextColor(GetThemeColor())
+                label:SetTextColor(HT.GetThemeColor())
                 
                 if info.requiresReload then
                     local reloadIcon = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                    HT.ApplyFontString(reloadIcon, "GameFontNormalSmall")
                     reloadIcon:SetPoint("LEFT", label, "RIGHT", 5, 0)
                     reloadIcon:SetText("|cFFFFAA00(reload)|r")
                 end
                 
                 local desc = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                HT.ApplyFontString(desc, "GameFontNormalSmall")
                 desc:SetPoint("TOPLEFT", checkbox, "BOTTOMLEFT", 5, 2)
                 desc:SetPoint("RIGHT", container, "RIGHT", -5, 0)
                 desc:SetJustifyH("LEFT")
@@ -563,6 +716,7 @@ function PopulateSettingsFrame(frame)
                 if tweakName == "DecorPreview" then
                 -- Separator line
                 local sep = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                HT.ApplyFontString(sep, "GameFontNormalSmall")
                 sep:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
                 sep:SetText("_______________________________")
                 sep:SetTextColor(0.5, 0.5, 0.5)
@@ -570,6 +724,7 @@ function PopulateSettingsFrame(frame)
                 
                 -- Position label
                 local posLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                HT.ApplyFontString(posLabel, "GameFontNormal")
                 posLabel:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
                 posLabel:SetText("Preview Position:")
                 posLabel:SetTextColor(1, 1, 1)
@@ -578,20 +733,9 @@ function PopulateSettingsFrame(frame)
                 -- Dropdown
                 local dropdown = CreateFrame("Frame", "HousingTweaksPreviewPosDropdown", scrollChild, "UIDropDownMenuTemplate")
                 dropdown:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
-                UIDropDownMenu_SetWidth(dropdown, 150)
+                UIDropDownMenu_SetWidth(dropdown, 180)
                 
-                local positions = {
-                    { value = "CENTER", text = "Center" },
-                    { value = "CENTERRIGHT", text = "Center Right *" },
-                    { value = "CENTERLEFT", text = "Center Left" },
-                    { value = "TOP", text = "Top" },
-                    { value = "TOPRIGHT", text = "Top Right" },
-                    { value = "TOPLEFT", text = "Top Left" },
-                    { value = "RIGHT", text = "Right" },
-                    { value = "LEFT", text = "Left" },
-                    { value = "BOTTOMRIGHT", text = "Bottom Right" },
-                    { value = "BOTTOMLEFT", text = "Bottom Left" },
-                }
+                local positions = HT.PREVIEW_POSITIONS
                 
                 local function OnClick(self, arg1)
                     HousingTweaksDB.DecorPreviewPosition = arg1

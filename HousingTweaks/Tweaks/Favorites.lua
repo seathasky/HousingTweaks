@@ -5,20 +5,7 @@ local Favorites = {}
 HT:RegisterTweak("Favorites", Favorites)
 
 -- Get current theme color
-local function GetThemeColor()
-    local colorThemes = {
-        orange = {r = 1, g = 0.5, b = 0},
-        blue = {r = 0.2, g = 0.6, b = 1},
-        purple = {r = 0.7, g = 0.3, b = 1},
-        green = {r = 0.3, g = 0.9, b = 0.4},
-        red = {r = 1, g = 0.2, b = 0.2},
-        cyan = {r = 0.2, g = 0.9, b = 0.9},
-        white = {r = 1, g = 1, b = 1},
-    }
-    local themeName = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
-    local theme = colorThemes[themeName] or colorThemes.orange
-    return theme.r, theme.g, theme.b
-end
+-- Use shared theme helper
 
 -- Check if a decor is favorited
 local function IsFavorited(decorID)
@@ -71,7 +58,7 @@ local originalCatalogData = nil
 local function CreateFavoritesCategoryButton(categoriesFrame)
     if favoritesButton then return favoritesButton end
     
-    local r, g, b = GetThemeColor()
+    local r, g, b = HT.GetThemeColor()
     
     -- Create button frame
     local button = CreateFrame("Button", "HousingTweaksFavoritesButton", categoriesFrame)
@@ -99,6 +86,7 @@ local function CreateFavoritesCategoryButton(categoriesFrame)
     
     -- "HT" text below star
     local htText = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    HT.ApplyFontString(htText, "GameFontNormalSmall")
     htText:SetPoint("BOTTOM", button, "BOTTOM", 0, 5)
     htText:SetText("HT")
     htText:SetTextColor(r, g, b)
@@ -167,13 +155,23 @@ end
 
 -- Update the favorites button theme colors
 function Favorites:ApplyTheme()
+    local r, g, b = HT.GetThemeColor()
+    
+    -- Update favorites button colors
     if favoritesButton then
-        local r, g, b = GetThemeColor()
         favoritesButton.htText:SetTextColor(r, g, b)
         favoritesButton.highlight:SetVertexColor(r, g, b, 0.3)
         favoritesButton.selected:SetVertexColor(r, g, b, 1)
         if isShowingFavorites then
             favoritesButton.bg:SetVertexColor(r * 0.5, g * 0.5, b * 0.5, 0.9)
+        end
+    end
+    
+    -- Update the category header text if showing favorites
+    if isShowingFavorites then
+        local storagePanel = HouseEditorFrame and HouseEditorFrame.StoragePanel
+        if storagePanel and storagePanel.OptionsContainer and storagePanel.OptionsContainer.CategoryText then
+            storagePanel.OptionsContainer.CategoryText:SetTextColor(r, g, b)
         end
     end
 end
@@ -207,7 +205,7 @@ function Favorites:ShowFavorites()
     -- Update category text with our styled header
     if storagePanel.OptionsContainer and storagePanel.OptionsContainer.CategoryText then
         storagePanel.OptionsContainer.CategoryText:SetText("Housing Tweaks Favorites")
-        local r, g, b = GetThemeColor()
+        local r, g, b = HT.GetThemeColor()
         storagePanel.OptionsContainer.CategoryText:SetTextColor(r, g, b)
     end
 end
@@ -372,16 +370,8 @@ function Favorites:Init()
         return
     end
     
-    -- Wait for addon to load
-    local loader = CreateFrame("Frame")
-    loader:RegisterEvent("ADDON_LOADED")
-    loader:SetScript("OnEvent", function(self, event, loadedAddon)
-        if loadedAddon == "Blizzard_HouseEditor" then
-            C_Timer.After(0.5, function()
-                if SetupFavorites() then
-                    self:UnregisterEvent("ADDON_LOADED")
-                end
-            end)
-        end
+    -- Wait for the Blizzard House Editor to load
+    HT.WaitForHouseEditor(0, function()
+        SetupFavorites()
     end)
 end

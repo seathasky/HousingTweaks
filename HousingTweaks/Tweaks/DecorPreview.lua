@@ -8,29 +8,16 @@ HT:RegisterTweak("DecorPreview", DecorPreview)
 local previewFrame
 
 -- Get current theme color
-local function GetThemeColor()
-    local colorThemes = {
-        orange = {r = 1, g = 0.5, b = 0},
-        blue = {r = 0.2, g = 0.6, b = 1},
-        purple = {r = 0.7, g = 0.3, b = 1},
-        green = {r = 0.3, g = 0.9, b = 0.4},
-        red = {r = 1, g = 0.2, b = 0.2},
-        cyan = {r = 0.2, g = 0.9, b = 0.9},
-        white = {r = 1, g = 1, b = 1},
-    }
-    local themeName = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
-    local theme = colorThemes[themeName] or colorThemes.orange
-    return theme.r, theme.g, theme.b
-end
+-- Use shared theme helper
 
 -- Function to apply theme to existing preview frame
 function DecorPreview:ApplyTheme()
     if previewFrame then
         if previewFrame.titleText then
-            previewFrame.titleText:SetTextColor(GetThemeColor())
+            previewFrame.titleText:SetTextColor(HT.GetThemeColor())
         end
         if previewFrame.nameText then
-            previewFrame.nameText:SetTextColor(GetThemeColor())
+            previewFrame.nameText:SetTextColor(HT.GetThemeColor())
         end
     end
 end
@@ -79,9 +66,10 @@ local function CreatePreviewFrame()
     
     -- Title text
     local titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    HT.ApplyFontString(titleText, "GameFontNormal")
     titleText:SetPoint("TOP", frame, "TOP", 0, -12)
     titleText:SetText("Housing Tweaks Preview Window")
-    titleText:SetTextColor(GetThemeColor())
+    titleText:SetTextColor(HT.GetThemeColor())
     frame.titleText = titleText
     
     -- Icon
@@ -92,8 +80,9 @@ local function CreatePreviewFrame()
     
     -- Name text
     local nameText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    HT.ApplyFontString(nameText, "GameFontNormalLarge")
     nameText:SetPoint("BOTTOM", frame, "BOTTOM", 0, 40)
-    nameText:SetTextColor(GetThemeColor())
+    nameText:SetTextColor(HT.GetThemeColor())
     nameText:SetWidth(430)
     nameText:SetWordWrap(true)
     frame.nameText = nameText
@@ -237,16 +226,8 @@ function DecorPreview:Init()
         return
     end
     
-    -- Wait for addon to load
-    local loader = CreateFrame("Frame")
-    loader:RegisterEvent("ADDON_LOADED")
-    loader:SetScript("OnEvent", function(self, event, loadedAddon)
-        if loadedAddon == "Blizzard_HouseEditor" then
-            C_Timer.After(0.5, function()
-                if SetupHooks() then
-                    self:UnregisterEvent("ADDON_LOADED")
-                end
-            end)
-        end
+    -- Wait for the Blizzard House Editor to load
+    HT.WaitForHouseEditor(0, function()
+        SetupHooks()
     end)
 end
