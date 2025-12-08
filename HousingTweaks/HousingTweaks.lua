@@ -7,6 +7,7 @@ local defaults = {
         MoveableStoragePanel = true,
         DecorPreview = true,
         StoragePanelStyle = true,
+        Favorites = true,
     },
     positions = {},
     DecorPreviewPosition = "CENTERRIGHT",
@@ -58,6 +59,11 @@ HT.TweakInfo = {
     StoragePanelStyle = {
         name = "Storage Panel Style",
         description = "Applies a dark gray theme with colored accents to the storage panel.",
+        requiresReload = true,
+    },
+    Favorites = {
+        name = "Favorites",
+        description = "Adds a favorites system to mark and filter decor items with a star.",
         requiresReload = true,
     },
 }
@@ -222,7 +228,7 @@ local function CreateSettingsFrame()
     -- Version text in top right corner
     local versionText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     versionText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -25, -5)
-    versionText:SetText("ver. 1.0.2")
+    versionText:SetText("ver. 1.0.3")
     versionText:SetTextColor(0.6, 0.6, 0.6)
     versionText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     
@@ -354,6 +360,9 @@ function PopulateSettingsFrame(frame)
                 if HT.Tweaks.DecorPreview and HT.Tweaks.DecorPreview.ApplyTheme then
                     HT.Tweaks.DecorPreview:ApplyTheme()
                 end
+                if HT.Tweaks.Favorites and HT.Tweaks.Favorites.ApplyTheme then
+                    HT.Tweaks.Favorites:ApplyTheme()
+                end
                 
                 -- Refresh GUI colors
                 RefreshGUIColors(frame)            -- Update tab colors
@@ -445,7 +454,7 @@ function PopulateSettingsFrame(frame)
     -- Storage Tab Content
     if activeTab == "Storage" then
         -- Sort storage-related tweaks (StoragePanelStyle is in Theme tab)
-        local storageTweaks = {"MoveableStoragePanel", "DecorPreview"}
+        local storageTweaks = {"MoveableStoragePanel", "DecorPreview", "Favorites"}
         
         for _, tweakName in ipairs(storageTweaks) do
             local info = HT.TweakInfo[tweakName]

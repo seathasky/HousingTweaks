@@ -284,6 +284,9 @@ local function CreateStorageToolbar(storagePanel)
                 if HT.Tweaks.DecorPreview and HT.Tweaks.DecorPreview.ApplyTheme then
                     HT.Tweaks.DecorPreview:ApplyTheme()
                 end
+                if HT.Tweaks.Favorites and HT.Tweaks.Favorites.ApplyTheme then
+                    HT.Tweaks.Favorites:ApplyTheme()
+                end
             end
         )
         colorDropdown:SetPoint("RIGHT", leftmostElement, "LEFT", -4, 0)
@@ -471,6 +474,16 @@ function StoragePanelStyle:Init()
                     ApplyCategoriesStyle(self)
                 end)
             end)
+            
+            -- Hook SetCategoriesBackground to prevent wood texture from coming back
+            if storagePanel.Categories and storagePanel.Categories.SetCategoriesBackground then
+                hooksecurefunc(storagePanel.Categories, "SetCategoriesBackground", function()
+                    C_Timer.After(0.01, function()
+                        ApplyCategoriesStyle(storagePanel)
+                    end)
+                end)
+            end
+            
             storagePanel.htCategoriesHooked = true
         end
         

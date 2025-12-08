@@ -2,7 +2,7 @@
 ## Title: Housing Tweaks
 ## Notes: Quality of life tweaks for the Housing system
 ## Author: Seathasky
-## Version: 1.0.2
+## Version: 1.0.3
 ## SavedVariablesPerCharacter: HousingTweaksDB
 ## IconTexture: Interface\AddOns\HousingTweaks\Icons\ht.tga
 
@@ -10,3 +10,4 @@ HousingTweaks.lua
 Tweaks\MoveableStoragePanel.lua
 Tweaks\DecorPreview.lua
 Tweaks\StoragePanelStyle.lua
+Tweaks\Favorites.lua
