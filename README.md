@@ -13,9 +13,7 @@ Quality of life tweaks for the World of Warcraft Housing system.
 
 ## Usage
 
-Type `/ht` to open settings 
-(OR)
-Click HT in Decor storage panel at top or type /ht outside of housing edit mode.
+Type `/ht` to open settings in chat or click HT in Decor storage panel at top.
 
 ## Installation
 [Housing Tweaks on CurseForge](https://www.curseforge.com/wow/addons/housing-tweaks)
