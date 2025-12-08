@@ -222,7 +222,7 @@ local function CreateSettingsFrame()
     -- Version text in top right corner
     local versionText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     versionText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -25, -5)
-    versionText:SetText("ver. 1.0.1")
+    versionText:SetText("ver. 1.0.2")
     versionText:SetTextColor(0.6, 0.6, 0.6)
     versionText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     
