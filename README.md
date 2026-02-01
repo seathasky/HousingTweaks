@@ -1,4 +1,4 @@
-# Housing Tweaks
+# Matt's Housing Tweaks
 
 Quality of life tweaks for the World of Warcraft Housing system.
 
