@@ -282,58 +282,287 @@ HT.PREVIEW_POSITIONS = {
     { value = "BOTTOMLEFT", text = "Bottom Left" },
 }
 
+local GUI_STYLE = {
+    baseBg = { 0.04, 0.04, 0.05, 0.98 },
+    baseBorder = { 0.1, 0.1, 0.12, 1 },
+    titleBg = { 0.12, 0.12, 0.15, 1 },
+    panelBg = { 0.08, 0.08, 0.1, 1 },
+    panelBorder = { 0.18, 0.18, 0.22, 1 },
+    fieldBg = { 0.06, 0.06, 0.08, 1 },
+    fieldBorder = { 0.25, 0.25, 0.3, 1 },
+    textPrimary = { 0.92, 0.92, 0.92 },
+    textSecondary = { 0.72, 0.72, 0.72 },
+    textMuted = { 0.56, 0.56, 0.56 },
+}
+
+local PIXEL_BACKDROP = {
+    bgFile = "Interface\\Buttons\\WHITE8x8",
+    edgeFile = "Interface\\Buttons\\WHITE8x8",
+    edgeSize = 1,
+}
+
+local function ApplyMinimalBackdrop(frame, bgColor, borderColor)
+    if not frame or not frame.SetBackdrop then return end
+    frame:SetBackdrop(PIXEL_BACKDROP)
+    frame:SetBackdropColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4] or 1)
+    frame:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4] or 1)
+end
+
+local function AddAccentRegion(frame, region)
+    if not frame or not region then return end
+    if not frame.accentRegions then
+        frame.accentRegions = {}
+    end
+    table.insert(frame.accentRegions, region)
+end
+
+local function AddThemeWidget(frame, widgetListName, widget)
+    if not frame or not widget then return end
+    if not frame[widgetListName] then
+        frame[widgetListName] = {}
+    end
+    table.insert(frame[widgetListName], widget)
+end
+
+local function UpdateTabStyles(frame)
+    if not frame or not frame.tabs then return end
+    local r, g, b = HT.GetThemeColor()
+
+    for _, tab in ipairs(frame.tabs) do
+        if tab.name == frame.activeTab then
+            tab.isActive = true
+            tab:SetBackdropColor(GUI_STYLE.titleBg[1], GUI_STYLE.titleBg[2], GUI_STYLE.titleBg[3], GUI_STYLE.titleBg[4])
+            tab:SetBackdropBorderColor(r, g, b, 0.85)
+            tab.text:SetTextColor(1, 1, 1)
+        else
+            tab.isActive = false
+            tab:SetBackdropColor(GUI_STYLE.fieldBg[1], GUI_STYLE.fieldBg[2], GUI_STYLE.fieldBg[3], GUI_STYLE.fieldBg[4])
+            tab:SetBackdropBorderColor(GUI_STYLE.panelBorder[1], GUI_STYLE.panelBorder[2], GUI_STYLE.panelBorder[3], GUI_STYLE.panelBorder[4])
+            tab.text:SetTextColor(GUI_STYLE.textSecondary[1], GUI_STYLE.textSecondary[2], GUI_STYLE.textSecondary[3])
+        end
+    end
+end
+
 -- Function to refresh GUI colors
 local function RefreshGUIColors(frame)
+    if not frame then return end
     local r, g, b = HT.GetThemeColor()
-    
-    -- Update title
-    if frame.TitleText then
-        frame.TitleText:SetTextColor(r, g, b)
+
+    if frame.titleText then
+        frame.titleText:SetTextColor(r, g, b)
     end
-    
-    -- Update active tab text
-    if frame.tabs then
-        for _, tab in ipairs(frame.tabs) do
-            if tab.name == frame.activeTab then
-                tab.text:SetTextColor(r, g, b)
-            else
-                tab.text:SetTextColor(0.7, 0.7, 0.7)
+    if frame.accentLine then
+        frame.accentLine:SetColorTexture(r, g, b, 0.9)
+    end
+
+    UpdateTabStyles(frame)
+
+    if frame.accentRegions then
+        for _, region in ipairs(frame.accentRegions) do
+            if region and region.SetTextColor then
+                region:SetTextColor(r, g, b)
             end
         end
     end
-    
-    -- Update all children of scrollChild to find and update colored text
-    if frame.scrollChild then
-        local function UpdateRegion(region)
-            if region and region:GetObjectType() == "FontString" then
-                local text = region:GetText()
-                if text and text ~= "" then
-                    -- Update specific colored elements
-                    if text == "Theme Settings" or 
-                       text == "Moveable Storage Panel" or 
-                       text == "Storage Panel Style" or 
-                       text == "Decor Preview" then
-                        region:SetTextColor(r, g, b)
-                    end
+
+    if frame.toggleWidgets then
+        for _, widget in ipairs(frame.toggleWidgets) do
+            if widget and widget.ApplyTheme then
+                widget:ApplyTheme()
+            end
+        end
+    end
+
+    if frame.dropdownWidgets then
+        for _, widget in ipairs(frame.dropdownWidgets) do
+            if widget and widget.ApplyTheme then
+                widget:ApplyTheme()
+            end
+            if widget and widget.RefreshValue then
+                widget:RefreshValue()
+            end
+        end
+    end
+end
+
+local function CreateMinimalDropdown(parent, width, options, getCurrentValue, onSelect)
+    local dropdown = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    dropdown:SetSize(width, 20)
+    ApplyMinimalBackdrop(dropdown, GUI_STYLE.fieldBg, GUI_STYLE.fieldBorder)
+
+    local valueText = dropdown:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    HT.ApplyFontString(valueText, "GameFontNormalSmall")
+    valueText:SetPoint("LEFT", dropdown, "LEFT", 6, 0)
+    valueText:SetPoint("RIGHT", dropdown, "RIGHT", -18, 0)
+    valueText:SetJustifyH("LEFT")
+    dropdown.valueText = valueText
+
+    local arrowText = dropdown:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    HT.ApplyFontString(arrowText, "GameFontNormalSmall")
+    arrowText:SetPoint("RIGHT", dropdown, "RIGHT", -6, 0)
+    arrowText:SetText("v")
+    arrowText:SetTextColor(GUI_STYLE.textSecondary[1], GUI_STYLE.textSecondary[2], GUI_STYLE.textSecondary[3])
+    dropdown.arrowText = arrowText
+
+    local menuFrame = CreateFrame("Frame", nil, dropdown, "UIDropDownMenuTemplate")
+    menuFrame:Hide()
+
+    local function FindOptionText(value)
+        for _, opt in ipairs(options or {}) do
+            if opt.value == value then
+                return opt.text
+            end
+        end
+        return nil
+    end
+
+    local function RefreshValue()
+        local value = getCurrentValue and getCurrentValue() or nil
+        valueText:SetText(FindOptionText(value) or tostring(value or "Select..."))
+    end
+
+    dropdown.RefreshValue = RefreshValue
+    function dropdown:ApplyTheme()
+        local r, g, b = HT.GetThemeColor()
+        self.valueText:SetTextColor(r, g, b)
+    end
+
+    dropdown:SetScript("OnEnter", function(self)
+        local r, g, b = HT.GetThemeColor()
+        self:SetBackdropBorderColor(r, g, b, 0.6)
+        self.arrowText:SetTextColor(1, 1, 1)
+    end)
+    dropdown:SetScript("OnLeave", function(self)
+        self:SetBackdropBorderColor(GUI_STYLE.fieldBorder[1], GUI_STYLE.fieldBorder[2], GUI_STYLE.fieldBorder[3], GUI_STYLE.fieldBorder[4])
+        self.arrowText:SetTextColor(GUI_STYLE.textSecondary[1], GUI_STYLE.textSecondary[2], GUI_STYLE.textSecondary[3])
+    end)
+
+    dropdown:SetScript("OnClick", function(self)
+        local function HandleSelect(_, value)
+            if onSelect then
+                onSelect(value)
+            end
+            RefreshValue()
+            CloseDropDownMenus()
+        end
+
+        UIDropDownMenu_Initialize(menuFrame, function(_, level)
+            local currentValue = getCurrentValue and getCurrentValue() or nil
+            for _, opt in ipairs(options or {}) do
+                local info = UIDropDownMenu_CreateInfo()
+                info.text = opt.text
+                info.arg1 = opt.value
+                info.func = HandleSelect
+                info.checked = (opt.value == currentValue)
+                if opt.r and opt.g and opt.b then
+                    info.colorCode = string.format("|cff%02x%02x%02x", math.floor(opt.r * 255), math.floor(opt.g * 255), math.floor(opt.b * 255))
                 end
+                UIDropDownMenu_AddButton(info, level)
             end
-        end
-        
-        -- Update all font strings in scrollChild
-        local regions = {frame.scrollChild:GetRegions()}
-        for _, region in ipairs(regions) do
-            UpdateRegion(region)
-        end
-        
-        -- Update font strings in containers
-        local children = {frame.scrollChild:GetChildren()}
-        for _, child in ipairs(children) do
-            local childRegions = {child:GetRegions()}
-            for _, region in ipairs(childRegions) do
-                UpdateRegion(region)
-            end
+        end, "MENU")
+
+        ToggleDropDownMenu(1, nil, menuFrame, self, 0, 0)
+    end)
+
+    RefreshValue()
+    return dropdown
+end
+
+local function CreateSectionCard(parent, yOffset, height)
+    local card = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    card:SetPoint("TOPLEFT", parent, "TOPLEFT", 8, yOffset)
+    card:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -8, yOffset)
+    card:SetHeight(height)
+    ApplyMinimalBackdrop(card, GUI_STYLE.panelBg, GUI_STYLE.panelBorder)
+    return card, (yOffset - height - 10)
+end
+
+local function CreateTweakToggleCard(parent, frame, tweakName, yOffset)
+    local info = HT.TweakInfo[tweakName]
+    if not info then
+        return yOffset
+    end
+
+    local card = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    card:RegisterForClicks("LeftButtonUp")
+    card:SetPoint("TOPLEFT", parent, "TOPLEFT", 8, yOffset)
+    card:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -8, yOffset)
+    card:SetHeight(72)
+    ApplyMinimalBackdrop(card, GUI_STYLE.panelBg, GUI_STYLE.panelBorder)
+
+    local checkbox = CreateFrame("Button", nil, card, "BackdropTemplate")
+    checkbox:RegisterForClicks("LeftButtonUp")
+    checkbox:SetSize(14, 14)
+    checkbox:SetPoint("TOPLEFT", card, "TOPLEFT", 12, -12)
+    ApplyMinimalBackdrop(checkbox, GUI_STYLE.fieldBg, GUI_STYLE.fieldBorder)
+
+    local checkFill = checkbox:CreateTexture(nil, "ARTWORK")
+    checkFill:SetSize(8, 8)
+    checkFill:SetPoint("CENTER")
+    checkbox.checkFill = checkFill
+
+    local label = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    HT.ApplyFontString(label, "GameFontNormal")
+    label:SetPoint("LEFT", checkbox, "RIGHT", 8, 0)
+    label:SetText(info.name)
+    AddAccentRegion(frame, label)
+
+    if info.requiresReload then
+        local reloadText = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        HT.ApplyFontString(reloadText, "GameFontNormalSmall")
+        reloadText:SetPoint("LEFT", label, "RIGHT", 6, 0)
+        reloadText:SetText("|cFFFFAA00(reload)|r")
+    end
+
+    local desc = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    HT.ApplyFontString(desc, "GameFontNormalSmall")
+    desc:SetPoint("TOPLEFT", checkbox, "BOTTOMLEFT", 2, -4)
+    desc:SetPoint("RIGHT", card, "RIGHT", -10, 0)
+    desc:SetJustifyH("LEFT")
+    desc:SetText(info.description)
+    desc:SetTextColor(GUI_STYLE.textSecondary[1], GUI_STYLE.textSecondary[2], GUI_STYLE.textSecondary[3])
+
+    local function SetCheckedVisual(isChecked)
+        checkbox.isChecked = isChecked
+        checkbox.checkFill:SetShown(isChecked)
+        local r, g, b = HT.GetThemeColor()
+        checkbox.checkFill:SetColorTexture(r, g, b, 1)
+        if isChecked then
+            checkbox:SetBackdropBorderColor(r, g, b, 0.8)
+        else
+            checkbox:SetBackdropBorderColor(GUI_STYLE.fieldBorder[1], GUI_STYLE.fieldBorder[2], GUI_STYLE.fieldBorder[3], GUI_STYLE.fieldBorder[4])
         end
     end
+
+    function checkbox:ApplyTheme()
+        SetCheckedVisual(self.isChecked)
+    end
+
+    local function ToggleSetting()
+        local enabled = not checkbox.isChecked
+        HT:SetTweakEnabled(tweakName, enabled)
+        SetCheckedVisual(enabled)
+
+        if info.requiresReload then
+            StaticPopup_Show("HOUSINGTWEAKS_RELOAD_PROMPT")
+        end
+    end
+
+    SetCheckedVisual(HT:IsTweakEnabled(tweakName))
+    card:SetScript("OnClick", ToggleSetting)
+    checkbox:SetScript("OnClick", ToggleSetting)
+
+    card:SetScript("OnEnter", function(self)
+        local r, g, b = HT.GetThemeColor()
+        self:SetBackdropBorderColor(r, g, b, 0.45)
+    end)
+    card:SetScript("OnLeave", function(self)
+        self:SetBackdropBorderColor(GUI_STYLE.panelBorder[1], GUI_STYLE.panelBorder[2], GUI_STYLE.panelBorder[3], GUI_STYLE.panelBorder[4])
+    end)
+
+    table.insert(frame.containers, card)
+    AddThemeWidget(frame, "toggleWidgets", checkbox)
+    return yOffset - 82
 end
 
 -- Forward declare PopulateSettingsFrame
@@ -341,168 +570,183 @@ local PopulateSettingsFrame
 
 -- Create the settings GUI
 local function CreateSettingsFrame()
-    local frame = CreateFrame("Frame", "HousingTweaksSettingsFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(600, 450)
+    local frame = CreateFrame("Frame", "HousingTweaksSettingsFrame", UIParent, "BackdropTemplate")
+    frame:SetSize(620, 500)
     frame:SetPoint("CENTER")
+    frame:SetFrameStrata("DIALOG")
     frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", frame.StartMoving)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:SetClampedToScreen(true)
     frame:Hide()
-    
-    frame:SetFrameStrata("LOW")
-    frame.InsetBg:SetColorTexture(0.15, 0.15, 0.15, 1)
-    frame.Bg:SetColorTexture(0.15, 0.15, 0.15, 1)
-    frame.TitleBg:SetColorTexture(0.15, 0.15, 0.15, 1)
-    
-    -- Hide borders for minimal style
-    frame.TopBorder:Hide()
-    frame.BottomBorder:Hide()
-    frame.LeftBorder:Hide()
-    frame.RightBorder:Hide()
-    frame.TopLeftCorner:Hide()
-    frame.TopRightCorner:Hide()
-    frame.BotLeftCorner:Hide()
-    frame.BotRightCorner:Hide()
-    frame.InsetBorderTop:Hide()
-    frame.InsetBorderBottom:Hide()
-    frame.InsetBorderLeft:Hide()
-    frame.InsetBorderRight:Hide()
-    frame.InsetBorderTopLeft:Hide()
-    frame.InsetBorderTopRight:Hide()
-    frame.InsetBorderBottomLeft:Hide()
-    frame.InsetBorderBottomRight:Hide()
-    
-    frame.TitleText:SetText("Housing Tweaks")
-    frame.TitleText:SetTextColor(HT.GetThemeColor())
-    HT.ApplyFontString(frame.TitleText, 16, "OUTLINE")
-    
-    -- Version text in top right corner
-    local versionText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    versionText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -25, -5)
-    versionText:SetText("ver. 1.0.5")
-    versionText:SetTextColor(0.6, 0.6, 0.6)
-    HT.ApplyFontString(versionText, 10, "")
-    
-    -- Create tab buttons
-    local tabButtons = {}
-    
-    local function CreateTab(name, index)
-        local tab = CreateFrame("Button", nil, frame)
-        tab:SetSize(100, 30)
-        tab:SetPoint("TOPLEFT", frame.InsetBg, "TOPLEFT", 10 + (index - 1) * 105, 5)
-        
-        local text = tab:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        HT.ApplyFontString(text, "GameFontNormal")
-        text:SetPoint("CENTER")
-        text:SetText(name)
-        text:SetTextColor(0.7, 0.7, 0.7)
-        
-        local bg = tab:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.2, 0.2, 0.2, 1)
-        tab.bg = bg
-        
-        tab:SetScript("OnClick", function()
-            for _, t in ipairs(tabButtons) do
-                t.bg:SetColorTexture(0.2, 0.2, 0.2, 1)
-                t.text:SetTextColor(0.7, 0.7, 0.7)
-            end
-            tab.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
-                tab.text:SetTextColor(HT.GetThemeColor())
-            frame.activeTab = name
-            PopulateSettingsFrame(frame)
-        end)
-        
-        tab.text = text
-        tab.name = name
-        table.insert(tabButtons, tab)
-        return tab
-    end
-    
-    local themeTab = CreateTab("Theme", 1)
-    local storageTab = CreateTab("Storage", 2)
-    
-    -- Set Theme as default
-    themeTab.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
-    themeTab.text:SetTextColor(HT.GetThemeColor())
-    frame.activeTab = "Theme"
-    frame.tabs = tabButtons
-    
-    -- Scroll frame for tweaks list
-    local scrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", frame.InsetBg, "TOPLEFT", 5, -40)
-    scrollFrame:SetPoint("BOTTOMRIGHT", frame.InsetBg, "BOTTOMRIGHT", -26, 10)
-    
+    ApplyMinimalBackdrop(frame, GUI_STYLE.baseBg, GUI_STYLE.baseBorder)
+
+    local titleBar = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    titleBar:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
+    titleBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -1, -1)
+    titleBar:SetHeight(28)
+    ApplyMinimalBackdrop(titleBar, GUI_STYLE.titleBg, GUI_STYLE.baseBorder)
+    titleBar:EnableMouse(true)
+    titleBar:RegisterForDrag("LeftButton")
+    titleBar:SetScript("OnDragStart", function()
+        frame:StartMoving()
+    end)
+    titleBar:SetScript("OnDragStop", function()
+        frame:StopMovingOrSizing()
+    end)
+
+    frame.accentLine = frame:CreateTexture(nil, "BORDER")
+    frame.accentLine:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -29)
+    frame.accentLine:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -1, -29)
+    frame.accentLine:SetHeight(1)
+
+    local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    HT.ApplyFontString(titleText, 13, "")
+    titleText:SetPoint("LEFT", titleBar, "LEFT", 12, 0)
+    titleText:SetText("Matt's Housing Tweaks")
+    frame.titleText = titleText
+
+    local closeButton = CreateFrame("Button", nil, titleBar, "BackdropTemplate")
+    closeButton:SetSize(20, 20)
+    closeButton:SetPoint("RIGHT", titleBar, "RIGHT", -4, 0)
+    ApplyMinimalBackdrop(closeButton, GUI_STYLE.fieldBg, GUI_STYLE.fieldBorder)
+
+    local closeText = closeButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    HT.ApplyFontString(closeText, 12, "")
+    closeText:SetPoint("CENTER")
+    closeText:SetText("x")
+    closeText:SetTextColor(0.6, 0.6, 0.6)
+
+    closeButton:SetScript("OnEnter", function(self)
+        local r, g, b = HT.GetThemeColor()
+        self:SetBackdropBorderColor(r, g, b, 0.7)
+        closeText:SetTextColor(1, 0.35, 0.35)
+    end)
+    closeButton:SetScript("OnLeave", function(self)
+        self:SetBackdropBorderColor(GUI_STYLE.fieldBorder[1], GUI_STYLE.fieldBorder[2], GUI_STYLE.fieldBorder[3], GUI_STYLE.fieldBorder[4])
+        closeText:SetTextColor(0.6, 0.6, 0.6)
+    end)
+    closeButton:SetScript("OnClick", function()
+        frame:Hide()
+    end)
+
+    local tabBar = CreateFrame("Frame", nil, frame)
+    tabBar:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -36)
+    tabBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -36)
+    tabBar:SetHeight(24)
+
+    local content = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    content:SetPoint("TOPLEFT", tabBar, "BOTTOMLEFT", 0, -6)
+    content:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 10)
+    ApplyMinimalBackdrop(content, GUI_STYLE.panelBg, GUI_STYLE.panelBorder)
+
+    local scrollFrame = CreateFrame("ScrollFrame", nil, content, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -8)
+    scrollFrame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -28, 8)
+
     local scrollChild = CreateFrame("Frame", nil, scrollFrame)
-    scrollChild:SetSize(scrollFrame:GetWidth(), 1)
+    scrollChild:SetSize(1, 1)
     scrollFrame:SetScrollChild(scrollChild)
-    
+
     frame.scrollFrame = scrollFrame
     frame.scrollChild = scrollChild
     frame.containers = {}
-    
+    frame.accentRegions = {}
+    frame.toggleWidgets = {}
+    frame.dropdownWidgets = {}
+
+    local tabButtons = {}
+    local tabNames = { "Theme", "Storage" }
+    for index, name in ipairs(tabNames) do
+        local tab = CreateFrame("Button", nil, tabBar, "BackdropTemplate")
+        tab:SetSize(112, 24)
+        if index == 1 then
+            tab:SetPoint("TOPLEFT", tabBar, "TOPLEFT", 0, 0)
+        else
+            tab:SetPoint("LEFT", tabButtons[index - 1], "RIGHT", 4, 0)
+        end
+        ApplyMinimalBackdrop(tab, GUI_STYLE.fieldBg, GUI_STYLE.panelBorder)
+
+        local tabText = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        HT.ApplyFontString(tabText, "GameFontNormalSmall")
+        tabText:SetPoint("CENTER")
+        tabText:SetText(name)
+        tab.text = tabText
+        tab.name = name
+
+        tab:SetScript("OnEnter", function(self)
+            if self.isActive then return end
+            local r, g, b = HT.GetThemeColor()
+            self:SetBackdropBorderColor(r, g, b, 0.5)
+            self.text:SetTextColor(0.88, 0.88, 0.88)
+        end)
+        tab:SetScript("OnLeave", function(self)
+            if self.isActive then return end
+            self:SetBackdropBorderColor(GUI_STYLE.panelBorder[1], GUI_STYLE.panelBorder[2], GUI_STYLE.panelBorder[3], GUI_STYLE.panelBorder[4])
+            self.text:SetTextColor(GUI_STYLE.textSecondary[1], GUI_STYLE.textSecondary[2], GUI_STYLE.textSecondary[3])
+        end)
+        tab:SetScript("OnClick", function()
+            frame.activeTab = name
+            PopulateSettingsFrame(frame)
+        end)
+
+        tabButtons[index] = tab
+    end
+
+    frame.activeTab = "Theme"
+    frame.tabs = tabButtons
+    AddAccentRegion(frame, titleText)
+
+    RefreshGUIColors(frame)
     return frame
 end
 
 function PopulateSettingsFrame(frame)
     local scrollChild = frame.scrollChild
-    local yOffset = -10
     local activeTab = frame.activeTab or "Theme"
-    
-    -- Clear existing containers and all children from scrollChild
+    local yOffset = -8
+
     for _, container in pairs(frame.containers) do
         container:Hide()
         container:SetParent(nil)
     end
     wipe(frame.containers)
-    
-    -- Clear all existing children from scrollChild
-    local regions = {scrollChild:GetChildren()}
-    for _, region in ipairs(regions) do
-        region:Hide()
-        region:SetParent(nil)
+
+    frame.accentRegions = { frame.titleText }
+    frame.toggleWidgets = {}
+    frame.dropdownWidgets = {}
+
+    local childWidth = frame.scrollFrame and (frame.scrollFrame:GetWidth() - 4) or 560
+    if childWidth < 200 then
+        childWidth = 560
     end
-    local fontStrings = {scrollChild:GetRegions()}
-    for _, fontString in ipairs(fontStrings) do
-        if fontString:GetObjectType() == "FontString" then
-            fontString:Hide()
-            fontString:SetParent(nil)
-        end
-    end
-    
-    -- Theme Tab Content
+    scrollChild:SetWidth(childWidth)
+
     if activeTab == "Theme" then
-        -- Color theme section
-        local themeLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        HT.ApplyFontString(themeLabel, "GameFontNormalLarge")
-        themeLabel:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
-        themeLabel:SetText("Theme Settings")
-        themeLabel:SetTextColor(HT.GetThemeColor())
-        yOffset = yOffset - 30
-        
-        local themeDesc = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        HT.ApplyFontString(themeDesc, "GameFontNormal")
-        themeDesc:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
-        themeDesc:SetText("Accent Color Theme:")
-        themeDesc:SetTextColor(1, 1, 1)
-        yOffset = yOffset - 25
-        
-        -- Dropdown
-        local dropdown = CreateFrame("Frame", "HousingTweaksColorThemeDropdown", scrollChild, "UIDropDownMenuTemplate")
-        dropdown:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
-        UIDropDownMenu_SetWidth(dropdown, 150)
-        
-        local colorThemes = HT.COLOR_THEME_LIST
-        
-        local function OnClick(self, arg1)
-            HousingTweaksDB.storagePanelColorTheme = arg1
-            UIDropDownMenu_SetText(dropdown, self:GetText())
-            CloseDropDownMenus()
-            
-                -- Apply theme immediately without reload
+        local themeCard
+        themeCard, yOffset = CreateSectionCard(scrollChild, yOffset, 122)
+        table.insert(frame.containers, themeCard)
+
+        local themeHeader = themeCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        HT.ApplyFontString(themeHeader, "GameFontNormal")
+        themeHeader:SetPoint("TOPLEFT", themeCard, "TOPLEFT", 12, -12)
+        themeHeader:SetText("Theme Settings")
+        AddAccentRegion(frame, themeHeader)
+
+        local themeDesc = themeCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        HT.ApplyFontString(themeDesc, "GameFontNormalSmall")
+        themeDesc:SetPoint("TOPLEFT", themeHeader, "BOTTOMLEFT", 0, -10)
+        themeDesc:SetText("Accent Color Theme")
+        themeDesc:SetTextColor(GUI_STYLE.textPrimary[1], GUI_STYLE.textPrimary[2], GUI_STYLE.textPrimary[3])
+
+        local themeDropdown = CreateMinimalDropdown(
+            themeCard,
+            220,
+            HT.COLOR_THEME_LIST,
+            function()
+                return HousingTweaksDB.storagePanelColorTheme or "orange"
+            end,
+            function(value)
+                HousingTweaksDB.storagePanelColorTheme = value
+
                 if HT.Tweaks.StoragePanelStyle and HT.Tweaks.StoragePanelStyle.ApplyTheme then
                     HT.Tweaks.StoragePanelStyle:ApplyTheme()
                 end
@@ -512,265 +756,122 @@ function PopulateSettingsFrame(frame)
                 if HT.Tweaks.Favorites and HT.Tweaks.Favorites.ApplyTheme then
                     HT.Tweaks.Favorites:ApplyTheme()
                 end
-                
-                -- Refresh GUI colors
-                RefreshGUIColors(frame)            -- Update tab colors
-            if frame.tabs then
-                for _, tab in ipairs(frame.tabs) do
-                    if tab.text:GetText() == activeTab then
-                        tab.text:SetTextColor(HT.GetThemeColor())
-                    end
-                end
+
+                RefreshGUIColors(frame)
             end
-        end
-        
-        UIDropDownMenu_Initialize(dropdown, function(self, level)
-            for _, theme in ipairs(colorThemes) do
-                local info = UIDropDownMenu_CreateInfo()
-                info.text = theme.text
-                info.arg1 = theme.value
-                info.func = OnClick
-                info.checked = (HousingTweaksDB.storagePanelColorTheme == theme.value)
-                info.colorCode = string.format("|cff%02x%02x%02x", theme.r * 255, theme.g * 255, theme.b * 255)
-                UIDropDownMenu_AddButton(info, level)
-            end
-        end)
-        
-        -- Set current selection text
-        local currentTheme = HousingTweaksDB.storagePanelColorTheme or "orange"
-        for _, theme in ipairs(colorThemes) do
-            if theme.value == currentTheme then
-                UIDropDownMenu_SetText(dropdown, theme.text)
-                break
-            end
-        end
-        
-        yOffset = yOffset - 40
-        
-        local note = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        HT.ApplyFontString(note, "GameFontNormalSmall")
-        note:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
-        note:SetPoint("RIGHT", scrollChild, "RIGHT", -15, 0)
-        note:SetJustifyH("LEFT")
-        note:SetText("This color theme applies to GUI elements and storage panel accents.")
-        note:SetTextColor(0.7, 0.7, 0.7)
-        
-        table.insert(frame.containers, dropdown)
-        
-        yOffset = yOffset - 50
-        
-        -- Storage Panel Style tweak
-        local info = HT.TweakInfo["StoragePanelStyle"]
-        if info then
-            local container = CreateFrame("Frame", nil, scrollChild)
-            container:SetSize(scrollChild:GetWidth() - 10, 60)
-            container:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
-            
-            local checkbox = CreateFrame("CheckButton", nil, container, "UICheckButtonTemplate")
-            checkbox:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
-            checkbox:SetChecked(HT:IsTweakEnabled("StoragePanelStyle"))
-            
-            local label = container:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-            HT.ApplyFontString(label, "GameFontNormal")
-            label:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
-            label:SetText(info.name)
-            label:SetTextColor(HT.GetThemeColor())
-            
-            if info.requiresReload then
-                local reloadIcon = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-                HT.ApplyFontString(reloadIcon, "GameFontNormalSmall")
-                reloadIcon:SetPoint("LEFT", label, "RIGHT", 5, 0)
-                reloadIcon:SetText("|cFFFFAA00(reload)|r")
-            end
-            
-            local desc = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            HT.ApplyFontString(desc, "GameFontNormalSmall")
-            desc:SetPoint("TOPLEFT", checkbox, "BOTTOMLEFT", 5, 2)
-            desc:SetPoint("RIGHT", container, "RIGHT", -5, 0)
-            desc:SetJustifyH("LEFT")
-            desc:SetText(info.description)
-            desc:SetTextColor(1, 1, 1)
-            
-            checkbox:SetScript("OnClick", function(self)
-                local enabled = self:GetChecked()
-                HT:SetTweakEnabled("StoragePanelStyle", enabled)
-                
-                if info.requiresReload then
-                    StaticPopup_Show("HOUSINGTWEAKS_RELOAD_PROMPT")
-                end
-            end)
-            
-            table.insert(frame.containers, container)
-            yOffset = yOffset - 70
-        end
-        
-        -- Toolbar Position dropdown
-        local toolbarLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        HT.ApplyFontString(toolbarLabel, "GameFontNormal")
-        toolbarLabel:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
-        toolbarLabel:SetText("Toolbar Position:")
-        toolbarLabel:SetTextColor(1, 1, 1)
-        yOffset = yOffset - 25
-        
-        local toolbarDropdown = CreateFrame("Frame", "HousingTweaksToolbarPosDropdown", scrollChild, "UIDropDownMenuTemplate")
-        toolbarDropdown:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
-        UIDropDownMenu_SetWidth(toolbarDropdown, 150)
-        
-        local toolbarPositions = {
+        )
+        themeDropdown:SetPoint("TOPLEFT", themeDesc, "BOTTOMLEFT", 0, -6)
+        AddThemeWidget(frame, "dropdownWidgets", themeDropdown)
+
+        local themeNote = themeCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        HT.ApplyFontString(themeNote, "GameFontNormalSmall")
+        themeNote:SetPoint("TOPLEFT", themeDropdown, "BOTTOMLEFT", 0, -8)
+        themeNote:SetPoint("RIGHT", themeCard, "RIGHT", -12, 0)
+        themeNote:SetJustifyH("LEFT")
+        themeNote:SetText("Applies to Housing Tweaks GUI accents and storage panel highlights.")
+        themeNote:SetTextColor(GUI_STYLE.textMuted[1], GUI_STYLE.textMuted[2], GUI_STYLE.textMuted[3])
+
+        yOffset = CreateTweakToggleCard(scrollChild, frame, "StoragePanelStyle", yOffset)
+
+        local toolbarCard
+        toolbarCard, yOffset = CreateSectionCard(scrollChild, yOffset, 106)
+        table.insert(frame.containers, toolbarCard)
+
+        local toolbarHeader = toolbarCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        HT.ApplyFontString(toolbarHeader, "GameFontNormal")
+        toolbarHeader:SetPoint("TOPLEFT", toolbarCard, "TOPLEFT", 12, -12)
+        toolbarHeader:SetText("Toolbar Position")
+        AddAccentRegion(frame, toolbarHeader)
+
+        local toolbarOptions = {
             { value = "TOPRIGHT", text = "Top Right" },
             { value = "BOTTOMRIGHT", text = "Bottom Right *" },
         }
-        
-        local function OnToolbarPosClick(self, arg1)
-            HousingTweaksDB.toolbarPosition = arg1
-            UIDropDownMenu_SetText(toolbarDropdown, self:GetText())
-            CloseDropDownMenus()
-            
-            -- Apply position immediately
-            if HT.Tweaks.StoragePanelStyle and HT.Tweaks.StoragePanelStyle.ApplyToolbarPosition then
-                HT.Tweaks.StoragePanelStyle:ApplyToolbarPosition()
-            end
-        end
-        
-        UIDropDownMenu_Initialize(toolbarDropdown, function(self, level)
-            for _, pos in ipairs(toolbarPositions) do
-                local info = UIDropDownMenu_CreateInfo()
-                info.text = pos.text
-                info.arg1 = pos.value
-                info.func = OnToolbarPosClick
-                info.checked = (HousingTweaksDB.toolbarPosition == pos.value)
-                UIDropDownMenu_AddButton(info, level)
-            end
-        end)
-        
-        -- Set current selection text
-        local currentToolbarPos = HousingTweaksDB.toolbarPosition or "BOTTOMRIGHT"
-        for _, pos in ipairs(toolbarPositions) do
-            if pos.value == currentToolbarPos then
-                UIDropDownMenu_SetText(toolbarDropdown, pos.text)
-                break
-            end
-        end
-        
-        local toolbarNote = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        HT.ApplyFontString(toolbarNote, "GameFontNormalSmall")
-        toolbarNote:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset - 30)
-        toolbarNote:SetPoint("RIGHT", scrollChild, "RIGHT", -15, 0)
-        toolbarNote:SetJustifyH("LEFT")
-        toolbarNote:SetText("Position of the Preview/Color/HT dropdowns relative to the storage panel.")
-        toolbarNote:SetTextColor(0.7, 0.7, 0.7)
-        
-        table.insert(frame.containers, toolbarDropdown)
-    end
-    
-    -- Storage Tab Content
-    if activeTab == "Storage" then
-        -- Sort storage-related tweaks (StoragePanelStyle is in Theme tab)
-        local storageTweaks = {"MoveableStoragePanel", "DecorPreview", "Favorites"}
-        
-        for _, tweakName in ipairs(storageTweaks) do
-            local info = HT.TweakInfo[tweakName]
-            if info then
-                local container = CreateFrame("Frame", nil, scrollChild)
-                container:SetSize(scrollChild:GetWidth() - 10, 60)
-                container:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
-                
-                local checkbox = CreateFrame("CheckButton", nil, container, "UICheckButtonTemplate")
-                checkbox:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
-                checkbox:SetChecked(HT:IsTweakEnabled(tweakName))
-                
-                local label = container:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-                HT.ApplyFontString(label, "GameFontNormal")
-                label:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
-                label:SetText(info.name)
-                label:SetTextColor(HT.GetThemeColor())
-                
-                if info.requiresReload then
-                    local reloadIcon = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-                    HT.ApplyFontString(reloadIcon, "GameFontNormalSmall")
-                    reloadIcon:SetPoint("LEFT", label, "RIGHT", 5, 0)
-                    reloadIcon:SetText("|cFFFFAA00(reload)|r")
+
+        local toolbarDropdown = CreateMinimalDropdown(
+            toolbarCard,
+            220,
+            toolbarOptions,
+            function()
+                return HousingTweaksDB.toolbarPosition or "BOTTOMRIGHT"
+            end,
+            function(value)
+                HousingTweaksDB.toolbarPosition = value
+                if HT.Tweaks.StoragePanelStyle and HT.Tweaks.StoragePanelStyle.ApplyToolbarPosition then
+                    HT.Tweaks.StoragePanelStyle:ApplyToolbarPosition()
                 end
-                
-                local desc = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-                HT.ApplyFontString(desc, "GameFontNormalSmall")
-                desc:SetPoint("TOPLEFT", checkbox, "BOTTOMLEFT", 5, 2)
-                desc:SetPoint("RIGHT", container, "RIGHT", -5, 0)
-                desc:SetJustifyH("LEFT")
-                desc:SetText(info.description)
-                desc:SetTextColor(1, 1, 1)
-                
-                checkbox:SetScript("OnClick", function(self)
-                    local enabled = self:GetChecked()
-                    HT:SetTweakEnabled(tweakName, enabled)
-                    
-                    if info.requiresReload then
+            end
+        )
+        toolbarDropdown:SetPoint("TOPLEFT", toolbarHeader, "BOTTOMLEFT", 0, -10)
+        AddThemeWidget(frame, "dropdownWidgets", toolbarDropdown)
+
+        local toolbarNote = toolbarCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        HT.ApplyFontString(toolbarNote, "GameFontNormalSmall")
+        toolbarNote:SetPoint("TOPLEFT", toolbarDropdown, "BOTTOMLEFT", 0, -8)
+        toolbarNote:SetPoint("RIGHT", toolbarCard, "RIGHT", -12, 0)
+        toolbarNote:SetJustifyH("LEFT")
+        toolbarNote:SetText("Controls the position of the Preview, Color, and HT controls near the storage panel.")
+        toolbarNote:SetTextColor(GUI_STYLE.textMuted[1], GUI_STYLE.textMuted[2], GUI_STYLE.textMuted[3])
+    end
+
+    if activeTab == "Storage" then
+        local storageHeaderCard
+        storageHeaderCard, yOffset = CreateSectionCard(scrollChild, yOffset, 50)
+        table.insert(frame.containers, storageHeaderCard)
+
+        local storageHeader = storageHeaderCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        HT.ApplyFontString(storageHeader, "GameFontNormal")
+        storageHeader:SetPoint("TOPLEFT", storageHeaderCard, "TOPLEFT", 12, -12)
+        storageHeader:SetText("Storage Tweaks")
+        AddAccentRegion(frame, storageHeader)
+
+        local storageSub = storageHeaderCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        HT.ApplyFontString(storageSub, "GameFontNormalSmall")
+        storageSub:SetPoint("TOPLEFT", storageHeader, "BOTTOMLEFT", 0, -6)
+        storageSub:SetText("Enable features and tune preview behavior.")
+        storageSub:SetTextColor(GUI_STYLE.textMuted[1], GUI_STYLE.textMuted[2], GUI_STYLE.textMuted[3])
+
+        local storageTweaks = { "MoveableStoragePanel", "DecorPreview", "Favorites" }
+        for _, tweakName in ipairs(storageTweaks) do
+            yOffset = CreateTweakToggleCard(scrollChild, frame, tweakName, yOffset)
+
+            if tweakName == "DecorPreview" then
+                local previewCard
+                previewCard, yOffset = CreateSectionCard(scrollChild, yOffset, 94)
+                table.insert(frame.containers, previewCard)
+
+                local posHeader = previewCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                HT.ApplyFontString(posHeader, "GameFontNormal")
+                posHeader:SetPoint("TOPLEFT", previewCard, "TOPLEFT", 12, -12)
+                posHeader:SetText("Preview Position")
+                AddAccentRegion(frame, posHeader)
+
+                local previewDropdown = CreateMinimalDropdown(
+                    previewCard,
+                    230,
+                    HT.PREVIEW_POSITIONS,
+                    function()
+                        return HousingTweaksDB.DecorPreviewPosition or "CENTERRIGHT"
+                    end,
+                    function(value)
+                        HousingTweaksDB.DecorPreviewPosition = value
                         StaticPopup_Show("HOUSINGTWEAKS_RELOAD_PROMPT")
                     end
-                end)
-                
-                table.insert(frame.containers, container)
-                yOffset = yOffset - 70
-                
-                -- Add dropdown for DecorPreview position
-                if tweakName == "DecorPreview" then
-                -- Separator line
-                local sep = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-                HT.ApplyFontString(sep, "GameFontNormalSmall")
-                sep:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
-                sep:SetText("_______________________________")
-                sep:SetTextColor(0.5, 0.5, 0.5)
-                yOffset = yOffset - 20
-                
-                -- Position label
-                local posLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-                HT.ApplyFontString(posLabel, "GameFontNormal")
-                posLabel:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
-                posLabel:SetText("Preview Position:")
-                posLabel:SetTextColor(1, 1, 1)
-                yOffset = yOffset - 25
-                
-                -- Dropdown
-                local dropdown = CreateFrame("Frame", "HousingTweaksPreviewPosDropdown", scrollChild, "UIDropDownMenuTemplate")
-                dropdown:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
-                UIDropDownMenu_SetWidth(dropdown, 180)
-                
-                local positions = HT.PREVIEW_POSITIONS
-                
-                local function OnClick(self, arg1)
-                    HousingTweaksDB.DecorPreviewPosition = arg1
-                    UIDropDownMenu_SetText(dropdown, self:GetText())
-                    CloseDropDownMenus()
-                    StaticPopup_Show("HOUSINGTWEAKS_RELOAD_PROMPT")
-                end
-                
-                UIDropDownMenu_Initialize(dropdown, function(self, level)
-                    for _, pos in ipairs(positions) do
-                        local info = UIDropDownMenu_CreateInfo()
-                        info.text = pos.text
-                        info.arg1 = pos.value
-                        info.func = OnClick
-                        info.checked = (HousingTweaksDB.DecorPreviewPosition == pos.value)
-                        UIDropDownMenu_AddButton(info, level)
-                    end
-                end)
-                
-                -- Set current selection text
-                local currentPos = HousingTweaksDB.DecorPreviewPosition or "RIGHT"
-                for _, pos in ipairs(positions) do
-                    if pos.value == currentPos then
-                        UIDropDownMenu_SetText(dropdown, pos.text)
-                        break
-                    end
-                end
-                
-                    yOffset = yOffset - 45
-                end
+                )
+                previewDropdown:SetPoint("TOPLEFT", posHeader, "BOTTOMLEFT", 0, -10)
+                AddThemeWidget(frame, "dropdownWidgets", previewDropdown)
+
+                local previewNote = previewCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                HT.ApplyFontString(previewNote, "GameFontNormalSmall")
+                previewNote:SetPoint("TOPLEFT", previewDropdown, "BOTTOMLEFT", 0, -8)
+                previewNote:SetText("Changing this option requires a reload.")
+                previewNote:SetTextColor(GUI_STYLE.textMuted[1], GUI_STYLE.textMuted[2], GUI_STYLE.textMuted[3])
             end
         end
     end
-    
-    scrollChild:SetHeight(math.abs(yOffset) + 10)
+
+    scrollChild:SetHeight(math.max(math.abs(yOffset) + 8, frame.scrollFrame:GetHeight()))
+    RefreshGUIColors(frame)
 end
 
 -- Slash command
@@ -792,7 +893,7 @@ function HT:ShowSettings()
     PopulateSettingsFrame(settingsFrame)
     settingsFrame:Show()
     if HouseEditorFrame and HouseEditorFrame:IsShown() then
-        print("|cFFFFAA00Housing Tweaks:|r Settings GUI will open when you leave Edit House mode.")
+        print("|cFFFFAA00Matt's Housing Tweaks:|r Settings GUI will open when you leave Edit House mode.")
     end
 end
 
@@ -812,7 +913,7 @@ initFrame:SetScript("OnEvent", function(self, event, loadedAddon)
             end
         end)
         
-        print("|cFF00FF00Housing Tweaks|r loaded. Type |cFFFFFF00/ht|r to open settings.")
+        print("|cFF00FF00Matt's Housing Tweaks|r loaded. Type |cFFFFFF00/ht|r to open settings.")
         self:UnregisterEvent("ADDON_LOADED")
     end
 end)

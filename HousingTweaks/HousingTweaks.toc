@@ -1,8 +1,8 @@
 ## Interface: 120000
-## Title: Housing Tweaks
+## Title: Matt's Housing Tweaks
 ## Notes: Quality of life tweaks for the Housing system
 ## Author: Seathasky
-## Version: 1.0.6
+## Version: 1.0.7
 ## SavedVariablesPerCharacter: HousingTweaksDB
 ## IconTexture: Interface\AddOns\HousingTweaks\Icons\ht.tga
 

@@ -11,6 +11,13 @@ local function GetCurrentTheme()
     return HT.GetTheme()
 end
 
+local TOOLBAR_STYLE = {
+    fieldBg = { 0.06, 0.06, 0.08, 1 },
+    fieldBgHover = { 0.1, 0.1, 0.12, 1 },
+    fieldBorder = { 0.25, 0.25, 0.3, 1 },
+    labelText = { 0.75, 0.75, 0.75 },
+}
+
 -- Function to apply position to preview frame
 local function ApplyPreviewPosition(positionValue)
     local previewFrame = _G["HousingTweaksDecorPreview"]
@@ -60,7 +67,7 @@ local function CreateDropdownWidget(parent, label, width, options, getCurrentVal
     -- Background
     local bg = container:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.1, 0.1, 0.1, 0.95)
+    bg:SetColorTexture(TOOLBAR_STYLE.fieldBg[1], TOOLBAR_STYLE.fieldBg[2], TOOLBAR_STYLE.fieldBg[3], TOOLBAR_STYLE.fieldBg[4])
     container.bg = bg
     
     -- Border
@@ -71,7 +78,7 @@ local function CreateDropdownWidget(parent, label, width, options, getCurrentVal
         edgeFile = "Interface\\Buttons\\WHITE8x8",
         edgeSize = 1,
     })
-    border:SetBackdropBorderColor(theme.r, theme.g, theme.b, 0.7)
+    border:SetBackdropBorderColor(TOOLBAR_STYLE.fieldBorder[1], TOOLBAR_STYLE.fieldBorder[2], TOOLBAR_STYLE.fieldBorder[3], TOOLBAR_STYLE.fieldBorder[4])
     container.border = border
     
     -- Label
@@ -79,7 +86,7 @@ local function CreateDropdownWidget(parent, label, width, options, getCurrentVal
     HT.ApplyFontString(labelText, "GameFontNormalSmall")
     labelText:SetPoint("LEFT", container, "LEFT", 6, 0)
     labelText:SetText(label)
-    labelText:SetTextColor(0.8, 0.8, 0.8)
+    labelText:SetTextColor(TOOLBAR_STYLE.labelText[1], TOOLBAR_STYLE.labelText[2], TOOLBAR_STYLE.labelText[3])
     container.label = labelText
     
     -- Current selection text
@@ -151,10 +158,12 @@ local function CreateDropdownWidget(parent, label, width, options, getCurrentVal
     
     -- Hover effect
     container:SetScript("OnEnter", function(self)
-        self.bg:SetColorTexture(0.15, 0.15, 0.15, 0.95)
+        self.bg:SetColorTexture(TOOLBAR_STYLE.fieldBgHover[1], TOOLBAR_STYLE.fieldBgHover[2], TOOLBAR_STYLE.fieldBgHover[3], TOOLBAR_STYLE.fieldBgHover[4])
+        self.border:SetBackdropBorderColor(theme.r, theme.g, theme.b, 0.6)
     end)
     container:SetScript("OnLeave", function(self)
-        self.bg:SetColorTexture(0.1, 0.1, 0.1, 0.95)
+        self.bg:SetColorTexture(TOOLBAR_STYLE.fieldBg[1], TOOLBAR_STYLE.fieldBg[2], TOOLBAR_STYLE.fieldBg[3], TOOLBAR_STYLE.fieldBg[4])
+        self.border:SetBackdropBorderColor(TOOLBAR_STYLE.fieldBorder[1], TOOLBAR_STYLE.fieldBorder[2], TOOLBAR_STYLE.fieldBorder[3], TOOLBAR_STYLE.fieldBorder[4])
     end)
     
     return container
@@ -171,7 +180,7 @@ local function CreateSettingsButton(parent)
     -- Background
     local bg = button:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.1, 0.1, 0.1, 0.95)
+    bg:SetColorTexture(TOOLBAR_STYLE.fieldBg[1], TOOLBAR_STYLE.fieldBg[2], TOOLBAR_STYLE.fieldBg[3], TOOLBAR_STYLE.fieldBg[4])
     button.bg = bg
     
     -- Border
@@ -182,7 +191,7 @@ local function CreateSettingsButton(parent)
         edgeFile = "Interface\\Buttons\\WHITE8x8",
         edgeSize = 1,
     })
-    border:SetBackdropBorderColor(theme.r, theme.g, theme.b, 0.7)
+    border:SetBackdropBorderColor(TOOLBAR_STYLE.fieldBorder[1], TOOLBAR_STYLE.fieldBorder[2], TOOLBAR_STYLE.fieldBorder[3], TOOLBAR_STYLE.fieldBorder[4])
     button.border = border
     
     -- Text
@@ -208,13 +217,15 @@ local function CreateSettingsButton(parent)
     
     -- Hover effect
     button:SetScript("OnEnter", function(self)
-        self.bg:SetColorTexture(0.15, 0.15, 0.15, 0.95)
+        self.bg:SetColorTexture(TOOLBAR_STYLE.fieldBgHover[1], TOOLBAR_STYLE.fieldBgHover[2], TOOLBAR_STYLE.fieldBgHover[3], TOOLBAR_STYLE.fieldBgHover[4])
+        self.border:SetBackdropBorderColor(theme.r, theme.g, theme.b, 0.6)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText("Housing Tweaks Settings")
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function(self)
-        self.bg:SetColorTexture(0.1, 0.1, 0.1, 0.95)
+        self.bg:SetColorTexture(TOOLBAR_STYLE.fieldBg[1], TOOLBAR_STYLE.fieldBg[2], TOOLBAR_STYLE.fieldBg[3], TOOLBAR_STYLE.fieldBg[4])
+        self.border:SetBackdropBorderColor(TOOLBAR_STYLE.fieldBorder[1], TOOLBAR_STYLE.fieldBorder[2], TOOLBAR_STYLE.fieldBorder[3], TOOLBAR_STYLE.fieldBorder[4])
         GameTooltip:Hide()
     end)
     
@@ -331,7 +342,7 @@ local function UpdateToolbarTheme(storagePanel)
     if storagePanel.htPreviewDropdown then
         local container = storagePanel.htPreviewDropdown
         if container.border and container.border.SetBackdropBorderColor then
-            container.border:SetBackdropBorderColor(theme.r, theme.g, theme.b, 0.7)
+            container.border:SetBackdropBorderColor(TOOLBAR_STYLE.fieldBorder[1], TOOLBAR_STYLE.fieldBorder[2], TOOLBAR_STYLE.fieldBorder[3], TOOLBAR_STYLE.fieldBorder[4])
         end
         if container.selectedText then
             container.selectedText:SetTextColor(theme.r, theme.g, theme.b)
@@ -342,7 +353,7 @@ local function UpdateToolbarTheme(storagePanel)
     if storagePanel.htColorDropdown then
         local container = storagePanel.htColorDropdown
         if container.border and container.border.SetBackdropBorderColor then
-            container.border:SetBackdropBorderColor(theme.r, theme.g, theme.b, 0.7)
+            container.border:SetBackdropBorderColor(TOOLBAR_STYLE.fieldBorder[1], TOOLBAR_STYLE.fieldBorder[2], TOOLBAR_STYLE.fieldBorder[3], TOOLBAR_STYLE.fieldBorder[4])
         end
         if container.selectedText then
             container.selectedText:SetTextColor(theme.r, theme.g, theme.b)
@@ -358,7 +369,7 @@ local function UpdateToolbarTheme(storagePanel)
     if storagePanel.htSettingsButton then
         local button = storagePanel.htSettingsButton
         if button.border and button.border.SetBackdropBorderColor then
-            button.border:SetBackdropBorderColor(theme.r, theme.g, theme.b, 0.7)
+            button.border:SetBackdropBorderColor(TOOLBAR_STYLE.fieldBorder[1], TOOLBAR_STYLE.fieldBorder[2], TOOLBAR_STYLE.fieldBorder[3], TOOLBAR_STYLE.fieldBorder[4])
         end
         if button.text then
             button.text:SetTextColor(theme.r, theme.g, theme.b)
