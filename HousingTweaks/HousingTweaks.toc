@@ -2,9 +2,9 @@
 ## Title: Matt's Housing Tweaks
 ## Notes: Quality of life tweaks for the Housing system
 ## Author: Seathasky
-## Version: 1.0.8
+## Version: 1.0.9
 ## SavedVariablesPerCharacter: HousingTweaksDB
-## IconTexture: Interface\AddOns\HousingTweaks\Icons\ht.tga
+## IconTexture: Interface\AddOns\HousingTweaks\Icons\HT.png
 
 HousingTweaks.lua
 Tweaks\MoveableStoragePanel.lua

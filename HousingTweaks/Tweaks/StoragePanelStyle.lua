@@ -17,6 +17,7 @@ local TOOLBAR_STYLE = {
     fieldBorder = { 0.25, 0.25, 0.3, 1 },
     labelText = { 0.75, 0.75, 0.75 },
 }
+local BOTTOM_TOOLBAR_Y_OFFSET = -14
 
 -- Function to apply position to preview frame
 local function ApplyPreviewPosition(positionValue)
@@ -249,7 +250,8 @@ local function ApplyToolbarPosition(storagePanel)
         if position == "TOPRIGHT" then
             storagePanel.htSettingsButton:SetPoint("BOTTOMRIGHT", storagePanel, "TOPRIGHT", 0, 4)
         else
-            storagePanel.htSettingsButton:SetPoint("TOPRIGHT", storagePanel, "BOTTOMRIGHT", 0, -4)
+            -- Anchor to the panel right edge and drop below the tab strip.
+            storagePanel.htSettingsButton:SetPoint("TOPRIGHT", storagePanel, "BOTTOMRIGHT", 0, BOTTOM_TOOLBAR_Y_OFFSET)
         end
     end
 end
@@ -277,7 +279,8 @@ local function CreateStorageToolbar(storagePanel)
     if position == "TOPRIGHT" then
         htButton:SetPoint("BOTTOMRIGHT", storagePanel, "TOPRIGHT", 0, 4)
     else
-        htButton:SetPoint("TOPRIGHT", storagePanel, "BOTTOMRIGHT", 0, -4)
+        -- Anchor to the panel right edge and drop below the tab strip.
+        htButton:SetPoint("TOPRIGHT", storagePanel, "BOTTOMRIGHT", 0, BOTTOM_TOOLBAR_Y_OFFSET)
     end
     storagePanel.htSettingsButton = htButton
     
@@ -434,6 +437,11 @@ local function SetupToolbar()
     
     local storagePanel = HouseEditorFrame.StoragePanel
     if not storagePanel then return false end
+    
+    -- Keep toolbar at top-right to avoid bottom tab overlap/clipping.
+    if HousingTweaksDB then
+        HousingTweaksDB.toolbarPosition = "TOPRIGHT"
+    end
     
     -- Create the toolbar with HT button (always) and conditional dropdowns
     CreateStorageToolbar(storagePanel)

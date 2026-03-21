@@ -6,6 +6,8 @@ HT:RegisterTweak("DecorPreview", DecorPreview)
 
 -- Create preview frame
 local previewFrame
+local PREVIEW_MODEL_SCENE_ID = 691
+local PREVIEW_ACTOR_TAG = "decor"
 
 -- Get current theme color
 -- Use shared theme helper
@@ -77,6 +79,19 @@ local function CreatePreviewFrame()
     icon:SetPoint("CENTER", frame, "CENTER", 0, -10)
     icon:SetSize(380, 380)
     frame.icon = icon
+
+    -- Model preview for entries that use asset file IDs instead of icon textures.
+    local modelScene = CreateFrame("ModelScene", nil, frame, "PanningModelSceneMixinTemplate")
+    modelScene:SetPoint("TOPLEFT", icon, "TOPLEFT", 0, 0)
+    modelScene:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 0, 0)
+    local forceSceneChange = true
+    if modelScene.TransitionToModelSceneID then
+        modelScene:TransitionToModelSceneID(PREVIEW_MODEL_SCENE_ID, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_MAINTAIN, forceSceneChange)
+    elseif modelScene.SetFromModelSceneID then
+        modelScene:SetFromModelSceneID(PREVIEW_MODEL_SCENE_ID, forceSceneChange)
+    end
+    modelScene:Hide()
+    frame.modelScene = modelScene
     
     -- Name text
     local nameText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -130,19 +145,61 @@ local function ShowPreview(button)
     
     -- Get element data from button
     local elementData = button.elementData or (button.GetElementData and button:GetElementData())
-    
-    -- Set icon - try multiple sources
-    local iconTexture = nil
-    if elementData and elementData.icon then
-        iconTexture = elementData.icon
-    elseif button.Icon then
-        iconTexture = button.Icon:GetTexture()
-    elseif button.icon then
-        iconTexture = button.icon:GetTexture()
+    local entryInfo = nil
+    if elementData and elementData.entryID and C_HousingCatalog and C_HousingCatalog.GetCatalogEntryInfo then
+        entryInfo = C_HousingCatalog.GetCatalogEntryInfo(elementData.entryID)
     end
     
-    if iconTexture then
-        frame.icon:SetTexture(iconTexture)
+    -- Featured bundle cards do not have entryID. Use the first decor entry for preview content.
+    if not entryInfo and elementData and elementData.decorEntries and C_HousingCatalog and C_HousingCatalog.GetCatalogEntryInfoByRecordID then
+        local firstDecor = elementData.decorEntries[1]
+        if firstDecor and firstDecor.decorID then
+            local tryGetOwnedInfo = false
+            entryInfo = C_HousingCatalog.GetCatalogEntryInfoByRecordID(Enum.HousingCatalogEntryType.Decor, firstDecor.decorID, tryGetOwnedInfo)
+        end
+    end
+    
+    -- Default to icon mode, then switch to model mode when needed.
+    frame.icon:Show()
+    frame.modelScene:Hide()
+
+    -- Reset previous icon state before applying a new icon.
+    frame.icon:SetDesaturated(false)
+    frame.icon:SetVertexColor(1, 1, 1, 1)
+    frame.icon:SetTexCoord(0, 1, 0, 1)
+
+    -- Set preview from canonical entry data.
+    if entryInfo and entryInfo.asset and frame.modelScene and frame.modelScene.GetActorByTag then
+        local modelSceneID = entryInfo.uiModelSceneID or PREVIEW_MODEL_SCENE_ID
+        if frame.modelScene.TransitionToModelSceneID then
+            frame.modelScene:TransitionToModelSceneID(modelSceneID, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)
+        elseif frame.modelScene.SetFromModelSceneID then
+            frame.modelScene:SetFromModelSceneID(modelSceneID, true)
+        end
+
+        local actor = frame.modelScene:GetActorByTag(PREVIEW_ACTOR_TAG)
+        if actor then
+            if actor.SetPreferModelCollisionBounds then
+                actor:SetPreferModelCollisionBounds(true)
+            end
+            actor:SetModelByFileID(entryInfo.asset)
+            actor:SetDesaturation(0)
+            actor:SetAlpha(1)
+            frame.icon:Hide()
+            frame.modelScene:Show()
+        else
+            frame.icon:SetTexture(134400) -- question mark fallback
+        end
+    elseif entryInfo and entryInfo.iconTexture then
+        frame.icon:SetTexture(entryInfo.iconTexture)
+    elseif entryInfo and entryInfo.iconAtlas then
+        frame.icon:SetAtlas(entryInfo.iconAtlas)
+    elseif elementData and elementData.icon then
+        frame.icon:SetTexture(elementData.icon)
+    elseif button.Icon then
+        frame.icon:SetTexture(button.Icon:GetTexture())
+    elseif button.icon then
+        frame.icon:SetTexture(button.icon:GetTexture())
     else
         -- Fallback: use a placeholder
         frame.icon:SetColorTexture(0.3, 0.3, 0.3, 1)
