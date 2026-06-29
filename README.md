@@ -1,8 +1,8 @@
-# Matt's Housing Tweaks
+# MattHousingTweaks
 
 Quality of life tweaks for the World of Warcraft Housing system.
 
-![Preview](https://raw.githubusercontent.com/seathasky/HousingTweaks/refs/heads/main/main.png)
+![Preview](https://raw.githubusercontent.com/seathasky/MattHousingTweaks/refs/heads/main/main.png)
 
 ## Features
 
@@ -16,4 +16,4 @@ Quality of life tweaks for the World of Warcraft Housing system.
 Type `/ht` to open settings in chat or click HT in Decor storage panel at top.
 
 ## Installation
-[Housing Tweaks on CurseForge](https://www.curseforge.com/wow/addons/housing-tweaks)
+[MattHousingTweaks on CurseForge](https://www.curseforge.com/wow/addons/MattHousingTweaks)

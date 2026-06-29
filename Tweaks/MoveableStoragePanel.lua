@@ -55,10 +55,10 @@ function MoveableStoragePanel:Init()
         
         -- Custom icon (commented out for later)
         -- if storageButton.Icon then
-        --     storageButton.Icon:SetTexture("Interface\\AddOns\\HousingTweaks\\icons\\decor_ht_128")
+        --     storageButton.Icon:SetTexture("Interface\\AddOns\\MattHousingTweaks\\icons\\decor_ht_128")
         -- end
         -- if storageButton.OverlayIcon then
-        --     storageButton.OverlayIcon:SetTexture("Interface\\AddOns\\HousingTweaks\\icons\\decor_ht_128")
+        --     storageButton.OverlayIcon:SetTexture("Interface\\AddOns\\MattHousingTweaks\\icons\\decor_ht_128")
         -- end
         
         -- Make both the button (collapsed) and panel (expanded) draggable

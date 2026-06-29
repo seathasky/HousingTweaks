@@ -1,4 +1,4 @@
--- HousingTweaks: Quality of life tweaks for the Housing system
+-- MattHousingTweaks: Quality of life tweaks for the Housing system
 local addonName, HT = ...
 
 -- Default settings
@@ -17,35 +17,35 @@ local defaults = {
 
 -- Initialize saved variables
 local function InitializeDB()
-    if not HousingTweaksDB then
-        HousingTweaksDB = CopyTable(defaults)
+    if not MattHousingTweaksDB then
+        MattHousingTweaksDB = CopyTable(defaults)
     end
     -- Ensure all default keys exist
     for k, v in pairs(defaults) do
-        if HousingTweaksDB[k] == nil then
+        if MattHousingTweaksDB[k] == nil then
             if type(v) == "table" then
-                HousingTweaksDB[k] = CopyTable(v)
+                MattHousingTweaksDB[k] = CopyTable(v)
             else
-                HousingTweaksDB[k] = v
+                MattHousingTweaksDB[k] = v
             end
         end
     end
     for k, v in pairs(defaults.tweaks) do
-        if HousingTweaksDB.tweaks[k] == nil then
-            HousingTweaksDB.tweaks[k] = v
+        if MattHousingTweaksDB.tweaks[k] == nil then
+            MattHousingTweaksDB.tweaks[k] = v
         end
     end
     -- Ensure DecorPreviewPosition default
-    if HousingTweaksDB.DecorPreviewPosition == nil then
-        HousingTweaksDB.DecorPreviewPosition = defaults.DecorPreviewPosition
+    if MattHousingTweaksDB.DecorPreviewPosition == nil then
+        MattHousingTweaksDB.DecorPreviewPosition = defaults.DecorPreviewPosition
     end
     -- Ensure storagePanelColorTheme default
-    if HousingTweaksDB.storagePanelColorTheme == nil then
-        HousingTweaksDB.storagePanelColorTheme = defaults.storagePanelColorTheme
+    if MattHousingTweaksDB.storagePanelColorTheme == nil then
+        MattHousingTweaksDB.storagePanelColorTheme = defaults.storagePanelColorTheme
     end
     -- Ensure toolbarPosition default
-    if HousingTweaksDB.toolbarPosition == nil then
-        HousingTweaksDB.toolbarPosition = defaults.toolbarPosition
+    if MattHousingTweaksDB.toolbarPosition == nil then
+        MattHousingTweaksDB.toolbarPosition = defaults.toolbarPosition
     end
 end
 
@@ -81,21 +81,21 @@ function HT:RegisterTweak(name, module)
 end
 
 function HT:IsTweakEnabled(name)
-    return HousingTweaksDB and HousingTweaksDB.tweaks[name]
+    return MattHousingTweaksDB and MattHousingTweaksDB.tweaks[name]
 end
 
 function HT:SetTweakEnabled(name, enabled)
-    if not HousingTweaksDB then return end
-    HousingTweaksDB.tweaks[name] = enabled
+    if not MattHousingTweaksDB then return end
+    MattHousingTweaksDB.tweaks[name] = enabled
 end
 
 function HT:GetPosition(name)
-    return HousingTweaksDB and HousingTweaksDB.positions[name]
+    return MattHousingTweaksDB and MattHousingTweaksDB.positions[name]
 end
 
 function HT:SavePosition(name, point, relativeTo, relativePoint, x, y)
-    if not HousingTweaksDB then return end
-    HousingTweaksDB.positions[name] = {
+    if not MattHousingTweaksDB then return end
+    MattHousingTweaksDB.positions[name] = {
         point = point,
         relativePoint = relativePoint,
         x = x,
@@ -104,7 +104,7 @@ function HT:SavePosition(name, point, relativeTo, relativePoint, x, y)
 end
 
 -- Font helpers
-HT.FontPath = "Interface\\AddOns\\HousingTweaks\\Fonts\\htfont.ttf"
+HT.FontPath = "Interface\\AddOns\\MattHousingTweaks\\Fonts\\htfont.ttf"
 function HT.GetFontPath()
     if HT.FontPath and HT.FontPath ~= "" then
         return HT.FontPath
@@ -142,7 +142,7 @@ function HT.ApplyFontString(fontString, templateOrSize, flags)
         local ok2, err2 = pcall(fontString.SetFont, fontString, fallback, size, flags)
         if not ok2 then
             -- As a last resort, do nothing to avoid breaking UI further
-            print("HousingTweaks: Failed to set font (custom and fallback). Error:", err, err2)
+            print("MattHousingTweaks: Failed to set font (custom and fallback). Error:", err, err2)
         end
     end
 end
@@ -166,28 +166,28 @@ function HT.ValidateCustomFont()
 end
 
 -- Slash command to toggle or test custom font
-SLASH_HOUSINGTWEAKS_FONT1 = "/htfont"
-SlashCmdList["HOUSINGTWEAKS_FONT"] = function(msg)
+SLASH_MATTHOUSINGTWEAKS_FONT1 = "/htfont"
+SlashCmdList["MATTHOUSINGTWEAKS_FONT"] = function(msg)
     local action = (msg or ""):lower():match("^(%S+)") or "test"
     if action == "test" then
         local ok, err = HT.ValidateCustomFont()
         if ok then
-            print("HousingTweaks: Custom font appears valid: ", HT.GetFontPath())
+            print("MattHousingTweaks: Custom font appears valid: ", HT.GetFontPath())
         else
-            print("HousingTweaks: Custom font validation failed:", err)
+            print("MattHousingTweaks: Custom font validation failed:", err)
         end
     elseif action == "enable" then
         if HT.FontPath == "" then
-            print("HousingTweaks: No custom font path set. Edit HT.FontPath in HousingTweaks.lua to set a path.")
+            print("MattHousingTweaks: No custom font path set. Edit HT.FontPath in MattHousingTweaks.lua to set a path.")
             return
         end
         HT.ApplyFontString(UIParent:CreateFontString(nil, "ARTWORK", "GameFontNormal"), 12, "")
-        print("HousingTweaks: Enabled custom font (attempted). Reload UI to ensure all elements update.")
+        print("MattHousingTweaks: Enabled custom font (attempted). Reload UI to ensure all elements update.")
     elseif action == "disable" then
         HT.FontPath = ""
-        print("HousingTweaks: Custom font disabled; fallback font will be used on next UI updates.")
+        print("MattHousingTweaks: Custom font disabled; fallback font will be used on next UI updates.")
     else
-        print("HousingTweaks /htfont commands: test | enable | disable")
+        print("MattHousingTweaks /htfont commands: test | enable | disable")
     end
 end
 
@@ -222,7 +222,7 @@ function HT.WaitForHouseEditor(delay, callback)
 end
 
 -- Reload prompt dialog
-StaticPopupDialogs["HOUSINGTWEAKS_RELOAD_PROMPT"] = {
+StaticPopupDialogs["MATTHOUSINGTWEAKS_RELOAD_PROMPT"] = {
     text = "This tweak requires a UI reload to take effect. Reload now?",
     button1 = "Reload",
     button2 = "Later",
@@ -259,7 +259,7 @@ HT.COLOR_THEME_LIST = {
 }
 
 function HT.GetTheme()
-    local themeName = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
+    local themeName = MattHousingTweaksDB and MattHousingTweaksDB.storagePanelColorTheme or "orange"
     return HT.COLOR_THEMES[themeName] or HT.COLOR_THEMES.orange
 end
 
@@ -544,7 +544,7 @@ local function CreateTweakToggleCard(parent, frame, tweakName, yOffset)
         SetCheckedVisual(enabled)
 
         if info.requiresReload then
-            StaticPopup_Show("HOUSINGTWEAKS_RELOAD_PROMPT")
+            StaticPopup_Show("MATTHOUSINGTWEAKS_RELOAD_PROMPT")
         end
     end
 
@@ -570,7 +570,7 @@ local PopulateSettingsFrame
 
 -- Create the settings GUI
 local function CreateSettingsFrame()
-    local frame = CreateFrame("Frame", "HousingTweaksSettingsFrame", UIParent, "BackdropTemplate")
+    local frame = CreateFrame("Frame", "MattHousingTweaksSettingsFrame", UIParent, "BackdropTemplate")
     frame:SetSize(620, 500)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
@@ -601,7 +601,7 @@ local function CreateSettingsFrame()
     local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     HT.ApplyFontString(titleText, 13, "")
     titleText:SetPoint("LEFT", titleBar, "LEFT", 12, 0)
-    titleText:SetText("Matt's Housing Tweaks")
+    titleText:SetText("MattHousingTweaks")
     frame.titleText = titleText
 
     local closeButton = CreateFrame("Button", nil, titleBar, "BackdropTemplate")
@@ -742,10 +742,10 @@ function PopulateSettingsFrame(frame)
             220,
             HT.COLOR_THEME_LIST,
             function()
-                return HousingTweaksDB.storagePanelColorTheme or "orange"
+                return MattHousingTweaksDB.storagePanelColorTheme or "orange"
             end,
             function(value)
-                HousingTweaksDB.storagePanelColorTheme = value
+                MattHousingTweaksDB.storagePanelColorTheme = value
 
                 if HT.Tweaks.StoragePanelStyle and HT.Tweaks.StoragePanelStyle.ApplyTheme then
                     HT.Tweaks.StoragePanelStyle:ApplyTheme()
@@ -768,7 +768,7 @@ function PopulateSettingsFrame(frame)
         themeNote:SetPoint("TOPLEFT", themeDropdown, "BOTTOMLEFT", 0, -8)
         themeNote:SetPoint("RIGHT", themeCard, "RIGHT", -12, 0)
         themeNote:SetJustifyH("LEFT")
-        themeNote:SetText("Applies to Housing Tweaks GUI accents and storage panel highlights.")
+        themeNote:SetText("Applies to MattHousingTweaks GUI accents and storage panel highlights.")
         themeNote:SetTextColor(GUI_STYLE.textMuted[1], GUI_STYLE.textMuted[2], GUI_STYLE.textMuted[3])
 
         yOffset = CreateTweakToggleCard(scrollChild, frame, "StoragePanelStyle", yOffset)
@@ -793,10 +793,10 @@ function PopulateSettingsFrame(frame)
             220,
             toolbarOptions,
             function()
-                return HousingTweaksDB.toolbarPosition or "BOTTOMRIGHT"
+                return MattHousingTweaksDB.toolbarPosition or "BOTTOMRIGHT"
             end,
             function(value)
-                HousingTweaksDB.toolbarPosition = value
+                MattHousingTweaksDB.toolbarPosition = value
                 if HT.Tweaks.StoragePanelStyle and HT.Tweaks.StoragePanelStyle.ApplyToolbarPosition then
                     HT.Tweaks.StoragePanelStyle:ApplyToolbarPosition()
                 end
@@ -851,11 +851,11 @@ function PopulateSettingsFrame(frame)
                     230,
                     HT.PREVIEW_POSITIONS,
                     function()
-                        return HousingTweaksDB.DecorPreviewPosition or "CENTERRIGHT"
+                        return MattHousingTweaksDB.DecorPreviewPosition or "CENTERRIGHT"
                     end,
                     function(value)
-                        HousingTweaksDB.DecorPreviewPosition = value
-                        StaticPopup_Show("HOUSINGTWEAKS_RELOAD_PROMPT")
+                        MattHousingTweaksDB.DecorPreviewPosition = value
+                        StaticPopup_Show("MATTHOUSINGTWEAKS_RELOAD_PROMPT")
                     end
                 )
                 previewDropdown:SetPoint("TOPLEFT", posHeader, "BOTTOMLEFT", 0, -10)
@@ -876,9 +876,9 @@ end
 
 -- Slash command
 local settingsFrame
-SLASH_HOUSINGTWEAKS1 = "/housingtweaks"
-SLASH_HOUSINGTWEAKS2 = "/ht"
-SlashCmdList["HOUSINGTWEAKS"] = function(msg)
+SLASH_MATTHOUSINGTWEAKS1 = "/MattHousingTweaks"
+SLASH_MATTHOUSINGTWEAKS2 = "/ht"
+SlashCmdList["MATTHOUSINGTWEAKS"] = function(msg)
     if not settingsFrame then
         settingsFrame = CreateSettingsFrame()
     end
@@ -893,7 +893,7 @@ function HT:ShowSettings()
     PopulateSettingsFrame(settingsFrame)
     settingsFrame:Show()
     if HouseEditorFrame and HouseEditorFrame:IsShown() then
-        print("|cFFFFAA00Matt's Housing Tweaks:|r Settings GUI will open when you leave Edit House mode.")
+        print("|cFFFFAA00MattHousingTweaks:|r Settings GUI will open when you leave Edit House mode.")
     end
 end
 
@@ -913,10 +913,10 @@ initFrame:SetScript("OnEvent", function(self, event, loadedAddon)
             end
         end)
         
-        print("|cFF00FF00Matt's Housing Tweaks|r loaded. Type |cFFFFFF00/ht|r to open settings.")
+        print("|cFF00FF00MattHousingTweaks|r loaded. Type |cFFFFFF00/ht|r to open settings.")
         self:UnregisterEvent("ADDON_LOADED")
     end
 end)
 
 -- Export addon table
-_G.HousingTweaks = HT
+_G.MattHousingTweaks = HT

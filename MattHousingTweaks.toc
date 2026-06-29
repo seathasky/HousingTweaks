@@ -1,13 +1,13 @@
-## Interface: 120005
+## Interface: 120007
 ## Title: Matt's Housing Tweaks
 ## Notes: Quality of life tweaks for the Housing system
 ## Author: Seathasky
-## Version: 1.1.0
+## Version: 1.1.1
 ## X-Curse-Project-ID: 1398982
-## SavedVariablesPerCharacter: HousingTweaksDB
-## IconTexture: Interface\AddOns\HousingTweaks\Icons\HT.png
+## SavedVariablesPerCharacter: MattHousingTweaksDB
+## IconTexture: Interface\AddOns\MattHousingTweaks\Icons\HT.png
 
-HousingTweaks.lua
+MattHousingTweaks.lua
 Tweaks\MoveableStoragePanel.lua
 Tweaks\DecorPreview.lua
 Tweaks\StoragePanelStyle.lua

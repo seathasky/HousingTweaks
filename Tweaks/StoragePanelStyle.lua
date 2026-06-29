@@ -1,4 +1,4 @@
--- StoragePanelStyle: Customizes the storage panel appearance to match Housing Tweaks style
+-- StoragePanelStyle: Customizes the storage panel appearance to match MattHousingTweaks style
 local addonName, HT = ...
 
 local StoragePanelStyle = {}
@@ -21,12 +21,12 @@ local BOTTOM_TOOLBAR_Y_OFFSET = -14
 
 -- Function to apply position to preview frame
 local function ApplyPreviewPosition(positionValue)
-    local previewFrame = _G["HousingTweaksDecorPreview"]
+    local previewFrame = _G["MattHousingTweaksDecorPreview"]
     if not previewFrame then return end
     
     -- Clear any saved custom position so the preset takes effect
-    if HousingTweaksDB and HousingTweaksDB.positions then
-        HousingTweaksDB.positions["DecorPreview"] = nil
+    if MattHousingTweaksDB and MattHousingTweaksDB.positions then
+        MattHousingTweaksDB.positions["DecorPreview"] = nil
     end
     
     local parent = HouseEditorFrame or UIParent
@@ -212,7 +212,7 @@ local function CreateSettingsButton(parent)
         
         -- Open settings after a short delay to let the UI transition
         C_Timer.After(0.1, function()
-            SlashCmdList["HOUSINGTWEAKS"]("")
+            SlashCmdList["MATTHOUSINGTWEAKS"]("")
         end)
     end)
     
@@ -221,7 +221,7 @@ local function CreateSettingsButton(parent)
         self.bg:SetColorTexture(TOOLBAR_STYLE.fieldBgHover[1], TOOLBAR_STYLE.fieldBgHover[2], TOOLBAR_STYLE.fieldBgHover[3], TOOLBAR_STYLE.fieldBgHover[4])
         self.border:SetBackdropBorderColor(theme.r, theme.g, theme.b, 0.6)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText("Housing Tweaks Settings")
+        GameTooltip:SetText("MattHousingTweaks Settings")
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function(self)
@@ -235,7 +235,7 @@ end
 
 -- Get toolbar position from settings
 local function GetToolbarPosition()
-    return HousingTweaksDB and HousingTweaksDB.toolbarPosition or "BOTTOMRIGHT"
+    return MattHousingTweaksDB and MattHousingTweaksDB.toolbarPosition or "BOTTOMRIGHT"
 end
 
 -- Apply toolbar position to all toolbar elements
@@ -294,9 +294,9 @@ local function CreateStorageToolbar(storagePanel)
             "Color:",
             110,
             colorOptions,
-            function() return HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange" end,
+            function() return MattHousingTweaksDB and MattHousingTweaksDB.storagePanelColorTheme or "orange" end,
             function(value)
-                HousingTweaksDB.storagePanelColorTheme = value
+                MattHousingTweaksDB.storagePanelColorTheme = value
                 
                 -- Apply theme immediately
                 if HT.Tweaks.StoragePanelStyle and HT.Tweaks.StoragePanelStyle.ApplyTheme then
@@ -322,9 +322,9 @@ local function CreateStorageToolbar(storagePanel)
             "Preview:",
             190,
             HT.PREVIEW_POSITIONS,
-            function() return HousingTweaksDB and HousingTweaksDB.DecorPreviewPosition or "CENTERRIGHT" end,
+            function() return MattHousingTweaksDB and MattHousingTweaksDB.DecorPreviewPosition or "CENTERRIGHT" end,
             function(value)
-                HousingTweaksDB.DecorPreviewPosition = value
+                MattHousingTweaksDB.DecorPreviewPosition = value
                 ApplyPreviewPosition(value)
             end
         )
@@ -362,7 +362,7 @@ local function UpdateToolbarTheme(storagePanel)
             container.selectedText:SetTextColor(theme.r, theme.g, theme.b)
         end
         -- Update displayed color name
-        local currentTheme = HousingTweaksDB and HousingTweaksDB.storagePanelColorTheme or "orange"
+        local currentTheme = MattHousingTweaksDB and MattHousingTweaksDB.storagePanelColorTheme or "orange"
         -- Get display name from centralized theme list
         local currentName = (HT.COLOR_THEMES[currentTheme] and HT.COLOR_THEMES[currentTheme].name) or "Orange"
         container.selectedText:SetText(currentName)
@@ -439,8 +439,8 @@ local function SetupToolbar()
     if not storagePanel then return false end
     
     -- Keep toolbar at top-right to avoid bottom tab overlap/clipping.
-    if HousingTweaksDB then
-        HousingTweaksDB.toolbarPosition = "TOPRIGHT"
+    if MattHousingTweaksDB then
+        MattHousingTweaksDB.toolbarPosition = "TOPRIGHT"
     end
     
     -- Create the toolbar with HT button (always) and conditional dropdowns

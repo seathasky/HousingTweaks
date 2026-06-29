@@ -30,7 +30,7 @@ local function CreatePreviewFrame()
     
     -- Parent to HouseEditorFrame instead of UIParent so it shows in housing mode
     local parent = HouseEditorFrame or UIParent
-    local frame = CreateFrame("Frame", "HousingTweaksDecorPreview", parent)
+    local frame = CreateFrame("Frame", "MattHousingTweaksDecorPreview", parent)
     frame:SetSize(450, 480)
     frame:SetFrameStrata("FULLSCREEN_DIALOG")
     frame:SetFrameLevel(9999)
@@ -70,7 +70,7 @@ local function CreatePreviewFrame()
     local titleText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     HT.ApplyFontString(titleText, "GameFontNormal")
     titleText:SetPoint("TOP", frame, "TOP", 0, -12)
-    titleText:SetText("Housing Tweaks Preview Window")
+    titleText:SetText("MattHousingTweaks Preview Window")
     titleText:SetTextColor(HT.GetThemeColor())
     frame.titleText = titleText
     
@@ -109,7 +109,7 @@ local function CreatePreviewFrame()
         frame:SetPoint(pos.point, parent, pos.relativePoint, pos.x, pos.y)
     else
         -- Use position from settings
-        local positionSetting = HousingTweaksDB and HousingTweaksDB.DecorPreviewPosition or "CENTERRIGHT"
+        local positionSetting = MattHousingTweaksDB and MattHousingTweaksDB.DecorPreviewPosition or "CENTERRIGHT"
         frame:ClearAllPoints()
         if positionSetting == "CENTER" then
             frame:SetPoint("CENTER", parent, "CENTER", 0, 0)

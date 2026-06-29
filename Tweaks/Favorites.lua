@@ -9,29 +9,29 @@ HT:RegisterTweak("Favorites", Favorites)
 
 -- Check if a decor is favorited
 local function IsFavorited(decorID)
-    if not HousingTweaksDB.favorites then
-        HousingTweaksDB.favorites = {}
+    if not MattHousingTweaksDB.favorites then
+        MattHousingTweaksDB.favorites = {}
     end
-    return HousingTweaksDB.favorites[decorID] == true
+    return MattHousingTweaksDB.favorites[decorID] == true
 end
 
 -- Toggle favorite status
 local function ToggleFavorite(decorID)
-    if not HousingTweaksDB.favorites then
-        HousingTweaksDB.favorites = {}
+    if not MattHousingTweaksDB.favorites then
+        MattHousingTweaksDB.favorites = {}
     end
-    if HousingTweaksDB.favorites[decorID] then
-        HousingTweaksDB.favorites[decorID] = nil
+    if MattHousingTweaksDB.favorites[decorID] then
+        MattHousingTweaksDB.favorites[decorID] = nil
     else
-        HousingTweaksDB.favorites[decorID] = true
+        MattHousingTweaksDB.favorites[decorID] = true
     end
 end
 
 -- Get all favorited decor IDs
 local function GetFavoriteDecorIDs()
     local ids = {}
-    if HousingTweaksDB.favorites then
-        for id, _ in pairs(HousingTweaksDB.favorites) do
+    if MattHousingTweaksDB.favorites then
+        for id, _ in pairs(MattHousingTweaksDB.favorites) do
             table.insert(ids, id)
         end
     end
@@ -41,8 +41,8 @@ end
 -- Count favorites
 local function GetFavoriteCount()
     local count = 0
-    if HousingTweaksDB.favorites then
-        for _ in pairs(HousingTweaksDB.favorites) do
+    if MattHousingTweaksDB.favorites then
+        for _ in pairs(MattHousingTweaksDB.favorites) do
             count = count + 1
         end
     end
@@ -61,7 +61,7 @@ local function CreateFavoritesCategoryButton(categoriesFrame)
     local r, g, b = HT.GetThemeColor()
     
     -- Create button frame
-    local button = CreateFrame("Button", "HousingTweaksFavoritesButton", categoriesFrame)
+    local button = CreateFrame("Button", "MattHousingTweaksFavoritesButton", categoriesFrame)
     button:SetSize(64, 64)
     
     -- Position at bottom of categories, below the last category button
@@ -112,7 +112,7 @@ local function CreateFavoritesCategoryButton(categoriesFrame)
     -- Tooltip
     button:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Favorites (Housing Tweaks)")
+        GameTooltip:SetText("Favorites (MattHousingTweaks)")
         GameTooltip:AddLine("Click to show your favorited decor items", 1, 1, 1)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine(GetFavoriteCount() .. " items favorited", r, g, b)
@@ -183,7 +183,7 @@ function Favorites:ShowFavorites()
     
     -- Get favorited items that exist in storage
     local favoriteEntries = {}
-    local favorites = HousingTweaksDB.favorites or {}
+    local favorites = MattHousingTweaksDB.favorites or {}
     
     -- We need to search through all owned decor to find matches
     if storagePanel.catalogSearcher then
@@ -204,7 +204,7 @@ function Favorites:ShowFavorites()
     
     -- Update category text with our styled header
     if storagePanel.OptionsContainer and storagePanel.OptionsContainer.CategoryText then
-        storagePanel.OptionsContainer.CategoryText:SetText("Housing Tweaks Favorites")
+        storagePanel.OptionsContainer.CategoryText:SetText("MattHousingTweaks Favorites")
         local r, g, b = HT.GetThemeColor()
         storagePanel.OptionsContainer.CategoryText:SetTextColor(r, g, b)
     end
@@ -305,8 +305,8 @@ end
 
 function Favorites:Init()
     -- Ensure favorites table exists
-    if not HousingTweaksDB.favorites then
-        HousingTweaksDB.favorites = {}
+    if not MattHousingTweaksDB.favorites then
+        MattHousingTweaksDB.favorites = {}
     end
     
     local function SetupFavorites()
